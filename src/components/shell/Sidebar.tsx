@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CirclePlay,
   Copy,
   Crop,
   Download,
+  Ellipsis,
   Heart,
   History,
   Layers,
@@ -15,6 +16,7 @@ import {
   Plus,
   SlidersHorizontal,
   Sparkles,
+  X,
   type LucideIcon
 } from "lucide-react";
 import { WORKFLOW_STEPS } from "@/lib/constants";
@@ -33,6 +35,44 @@ const SECONDARY: { screen: ScreenId; label: string; icon: LucideIcon }[] = [
   { screen: "history", label: "Histórico", icon: History },
   { screen: "settings", label: "Config", icon: SlidersHorizontal }
 ];
+
+const MOBILE_TABS: { screen: ScreenId; label: string; icon: LucideIcon }[] = [
+  { screen: "about", label: "Prompt", icon: Sparkles },
+  { screen: "cut", label: "Recortar", icon: Crop },
+  { screen: "animate", label: "Animar", icon: CirclePlay },
+  { screen: "gallery", label: "Galeria", icon: LayoutGrid }
+];
+
+const MOBILE_MORE: { screen: ScreenId; label: string; hint: string; icon: LucideIcon }[] = [
+  { screen: "batch", label: "Lote", hint: "Várias sheets de uma vez", icon: Layers },
+  { screen: "history", label: "Histórico", hint: "Ações desta sessão", icon: History },
+  { screen: "settings", label: "Config", hint: "Preferências", icon: SlidersHorizontal }
+];
+
+function TutorialDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  return (
+    <div className="tutorial-layer" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
+      <div className="tutorial-card">
+        <h3 id="tutorial-title">Como usar o SpriteCut PRO</h3>
+        <ol>
+          <li>
+            <strong>Prompt</strong> — descreva o personagem, ajuste a grade e copie o texto para o gerador de imagens.
+          </li>
+          <li>
+            <strong>Recortar</strong> — abra a PNG com fundo transparente. As guias seguem a grade do prompt.
+          </li>
+          <li>
+            <strong>Animar</strong> — pré-visualize cada linha e exporte ZIP (uma pasta por clip) ou HTML.
+          </li>
+        </ol>
+        <button type="button" className="btn primary" onClick={onClose}>
+          Entendi
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function Sidebar() {
   const { screen, setScreen, hasImage } = useSpriteCut();
@@ -108,54 +148,125 @@ export function Sidebar() {
         <span>v0.1.0</span>
         <Heart size={14} strokeWidth={1.75} />
       </div>
-      {tutorial ? (
-        <div className="tutorial-layer" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
-          <div className="tutorial-card">
-            <h3 id="tutorial-title">Como usar o SpriteCut PRO</h3>
-            <ol>
-              <li>
-                <strong>Prompt</strong> — descreva o personagem, ajuste a grade e copie o texto para o gerador de imagens.
-              </li>
-              <li>
-                <strong>Recortar</strong> — abra a PNG com fundo transparente. As guias seguem a grade do prompt.
-              </li>
-              <li>
-                <strong>Animar</strong> — pré-visualize cada linha e exporte ZIP (uma pasta por clip) ou HTML.
-              </li>
-            </ol>
-            <button type="button" className="btn primary" onClick={() => setTutorial(false)}>
-              Entendi
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <TutorialDialog open={tutorial} onClose={() => setTutorial(false)} />
     </aside>
   );
 }
 
 export function MobileNav() {
-  const { screen, setScreen } = useSpriteCut();
+  const { screen, setScreen, hasImage } = useSpriteCut();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [tutorial, setTutorial] = useState(false);
+  const moreActive = MOBILE_MORE.some((item) => item.screen === screen);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMoreOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [moreOpen]);
+
   return (
-    <nav className="mobile-bottom">
-      <button type="button" className={screen === "about" ? "active" : ""} onClick={() => setScreen("about")}>
-        1<span>Prompt</span>
-      </button>
-      <button type="button" className={screen === "cut" ? "active" : ""} onClick={() => setScreen("cut")}>
-        2<span>Recortar</span>
-      </button>
-      <button type="button" className={screen === "animate" ? "active" : ""} onClick={() => setScreen("animate")}>
-        3<span>Animar</span>
-      </button>
-      <button type="button" className={screen === "gallery" ? "active" : ""} onClick={() => setScreen("gallery")}>
-        Galeria
-      </button>
-      <button type="button" className={screen === "history" ? "active" : ""} onClick={() => setScreen("history")}>
-        Histórico
-      </button>
-      <button type="button" className={screen === "settings" ? "active" : ""} onClick={() => setScreen("settings")}>
-        Config
-      </button>
-    </nav>
+    <>
+      <nav className="mobile-bottom" aria-label="Navegação principal">
+        {MOBILE_TABS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.screen}
+              type="button"
+              className={screen === item.screen ? "active" : ""}
+              aria-current={screen === item.screen ? "page" : undefined}
+              onClick={() => {
+                setMoreOpen(false);
+                setScreen(item.screen);
+              }}
+            >
+              <Icon size={20} strokeWidth={1.75} aria-hidden />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          className={moreOpen || moreActive ? "active" : ""}
+          aria-expanded={moreOpen}
+          aria-controls="mobile-more-sheet"
+          onClick={() => setMoreOpen((v) => !v)}
+        >
+          <Ellipsis size={20} strokeWidth={1.75} aria-hidden />
+          <span>Mais</span>
+        </button>
+      </nav>
+
+      {moreOpen ? (
+        <div className="mobile-sheet-layer" role="presentation" onClick={() => setMoreOpen(false)}>
+          <div
+            id="mobile-more-sheet"
+            className="mobile-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mais opções"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mobile-sheet-handle" aria-hidden />
+            <div className="mobile-sheet-head">
+              <div>
+                <strong>SpriteCut PRO</strong>
+                <p>{hasImage ? "PNG pronta nesta sessão" : "Ainda sem PNG"}</p>
+              </div>
+              <button type="button" className="icon-btn" aria-label="Fechar" onClick={() => setMoreOpen(false)}>
+                <X size={18} strokeWidth={1.75} />
+              </button>
+            </div>
+            <div className="mobile-sheet-list">
+              {MOBILE_MORE.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.screen}
+                    type="button"
+                    className={"mobile-sheet-item" + (screen === item.screen ? " active" : "")}
+                    onClick={() => {
+                      setScreen(item.screen);
+                      setMoreOpen(false);
+                    }}
+                  >
+                    <span className="nav-ico">
+                      <Icon size={18} strokeWidth={1.75} />
+                    </span>
+                    <span>
+                      <strong>{item.label}</strong>
+                      <small>{item.hint}</small>
+                    </span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className="mobile-sheet-item"
+                onClick={() => {
+                  setMoreOpen(false);
+                  setTutorial(true);
+                }}
+              >
+                <span className="nav-ico">
+                  <CirclePlay size={18} strokeWidth={1.75} />
+                </span>
+                <span>
+                  <strong>Tutorial</strong>
+                  <small>Como ir do prompt ao ZIP</small>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <TutorialDialog open={tutorial} onClose={() => setTutorial(false)} />
+    </>
   );
 }
 
@@ -182,6 +293,15 @@ export function TopBar() {
 
   return (
     <header className="topbar">
+      <div className="mobile-brand">
+        <div className="brandmark">✦</div>
+        <div className="mobile-brand-copy">
+          <strong>
+            SpriteCut <span>PRO</span>
+          </strong>
+          <small>{page.title}</small>
+        </div>
+      </div>
       <div className="topbar-row">
         <ol className="flow-steps" aria-label="Passos do fluxo">
           {WORKFLOW_STEPS.map((step, i) => {
@@ -192,69 +312,70 @@ export function TopBar() {
                 {i > 0 ? <span className="flow-line" aria-hidden /> : null}
                 <button type="button" onClick={() => setScreen(step.screen)}>
                   <span className="flow-n">{step.n}</span>
-                  {step.label}
+                  <span className="flow-label">{step.label}</span>
                 </button>
               </li>
             );
           })}
         </ol>
         <div className="actions">
-          <button type="button" className="icon-btn" title="Tema escuro" aria-pressed="true">
+          <button type="button" className="icon-btn desktop-chrome" title="Tema escuro" aria-pressed="true">
             <Moon size={18} strokeWidth={1.75} />
           </button>
-        {screen === "about" ? (
-          <>
-            <button type="button" className="btn ghost" onClick={() => fileInputRef.current?.click()}>
-              Abrir PNG
-            </button>
-            <button type="button" className="btn ghost" onClick={() => void saveProject(false)}>
-              <Download size={16} strokeWidth={1.75} /> Guardar
-            </button>
-            <button type="button" className="icon-btn" title="Ecrã inteiro" onClick={toggleFullscreen}>
-              <Maximize2 size={18} strokeWidth={1.75} />
-            </button>
-            <button type="button" className="btn primary" onClick={() => void copyPrompt()}>
-              <Copy size={16} strokeWidth={1.75} /> Copiar prompt
-            </button>
-          </>
-        ) : screen === "animate" ? (
-          <>
-            <button type="button" className="btn ghost" onClick={() => void saveProject(false)}>
-              <Download size={16} strokeWidth={1.75} /> Guardar
-            </button>
-            <button type="button" className="btn ghost" onClick={() => void exportZip()} disabled={!hasImage}>
-              ZIP dos clips
-            </button>
-            <button type="button" className="btn primary" onClick={() => void exportHtml()} disabled={!hasImage}>
-              HTML animado
-            </button>
-          </>
-        ) : screen === "gallery" ? (
-          <>
-            <button type="button" className="btn ghost" onClick={() => void pickLibraryFolder()}>
-              <Download size={16} strokeWidth={1.75} /> {libraryName ? "Trocar pasta" : "Escolher pasta"}
-            </button>
-            <button type="button" className="btn primary" onClick={() => startNewProject()}>
-              <Plus size={16} strokeWidth={1.75} /> Novo projeto
-            </button>
-          </>
-        ) : (
-          <>
-            <button type="button" className="btn ghost" onClick={() => fileInputRef.current?.click()}>
-              {hasImage ? "Trocar PNG" : "Abrir PNG"}
-            </button>
-            <button type="button" className="btn ghost" onClick={() => void saveProject(false)}>
-              <Download size={16} strokeWidth={1.75} /> Guardar
-            </button>
-            <button type="button" className="btn primary" onClick={() => void exportZip()} disabled={!hasImage}>
-              Exportar ZIP
-            </button>
-          </>
-        )}
+          {screen === "about" ? (
+            <>
+              <button type="button" className="btn ghost desktop-chrome" onClick={() => fileInputRef.current?.click()}>
+                Abrir PNG
+              </button>
+              <button type="button" className="btn ghost desktop-chrome" onClick={() => void saveProject(false)}>
+                <Download size={16} strokeWidth={1.75} /> Guardar
+              </button>
+              <button type="button" className="icon-btn desktop-chrome" title="Ecrã inteiro" onClick={toggleFullscreen}>
+                <Maximize2 size={18} strokeWidth={1.75} />
+              </button>
+              <button type="button" className="btn primary" onClick={() => void copyPrompt()}>
+                <Copy size={16} strokeWidth={1.75} /> <span className="btn-label">Copiar prompt</span>
+              </button>
+            </>
+          ) : screen === "animate" ? (
+            <>
+              <button type="button" className="btn ghost desktop-chrome" onClick={() => void saveProject(false)}>
+                <Download size={16} strokeWidth={1.75} /> Guardar
+              </button>
+              <button type="button" className="btn ghost desktop-chrome" onClick={() => void exportZip()} disabled={!hasImage}>
+                ZIP dos clips
+              </button>
+              <button type="button" className="btn primary" onClick={() => void exportHtml()} disabled={!hasImage}>
+                <span className="btn-label">HTML animado</span>
+              </button>
+            </>
+          ) : screen === "gallery" ? (
+            <>
+              <button type="button" className="btn ghost" onClick={() => void pickLibraryFolder()}>
+                <Download size={16} strokeWidth={1.75} />{" "}
+                <span className="btn-label">{libraryName ? "Trocar pasta" : "Escolher pasta"}</span>
+              </button>
+              <button type="button" className="btn primary" onClick={() => startNewProject()}>
+                <Plus size={16} strokeWidth={1.75} /> <span className="btn-label">Novo projeto</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="btn ghost" onClick={() => fileInputRef.current?.click()}>
+                <span className="btn-label">{hasImage ? "Trocar PNG" : "Abrir PNG"}</span>
+              </button>
+              <button type="button" className="btn ghost desktop-chrome" onClick={() => void saveProject(false)}>
+                <Download size={16} strokeWidth={1.75} /> Guardar
+              </button>
+              <button type="button" className="btn primary" onClick={() => void exportZip()} disabled={!hasImage}>
+                <span className="btn-label">Exportar ZIP</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
       {screen !== "about" ? (
-        <div className="title">
+        <div className="title desktop-title">
           <h2>{page.title}</h2>
           <p>{page.sub}</p>
         </div>

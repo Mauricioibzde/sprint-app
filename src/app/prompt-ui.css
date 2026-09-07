@@ -281,10 +281,38 @@ select.wide-input{appearance:none;background-image:linear-gradient(45deg,transpa
   .char-grid{grid-template-columns:1fr}
 }
 @media (max-width: 980px){
-  .clip-row{grid-template-columns:20px 32px 1fr auto;grid-template-rows:auto auto}
+  .page-head{margin:0 0 14px}
+  .page-head h2{font-size:24px}
+  .page-head p{font-size:13px}
+  .ui-card{padding:14px;border-radius:14px;margin-bottom:12px}
+  .sec-head{gap:10px;margin-bottom:12px}
+  .sec-head > div:not(.mode-seg):not(.seg){min-width:0}
+  .mode-seg{margin-left:0;width:100%;min-width:0}
+  .clip-row{grid-template-columns:20px 32px 1fr auto;grid-template-rows:auto auto;gap:8px}
   .clip-name-input{grid-column:3}
   .clip-desc-input{grid-column:1 / -2}
   .actions .icon-btn{display:none}
+  .prompt-preview{
+    position:sticky;bottom:calc(76px + env(safe-area-inset-bottom));z-index:30;
+    margin:0 -2px;padding:12px;border-radius:16px;
+    box-shadow:0 -12px 36px rgba(0,0,0,.35);backdrop-filter:blur(12px)
+  }
+  .prompt-preview .prompt-actions{gap:8px}
+  .prompt-preview .btn{min-height:44px;justify-content:center}
+  .meta-row{grid-template-columns:1fr 1fr;gap:8px}
+  .gallery-banner{padding:12px;border-radius:14px;font-size:12px}
+  .gallery-search{min-width:0;flex:1 1 100%;height:44px}
+  .gallery-filters{
+    flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+    margin:0 -2px;padding:2px;gap:8px
+  }
+  .gallery-filters::-webkit-scrollbar{display:none}
+  .gallery-chip{flex:0 0 auto;min-height:36px;padding:8px 14px}
+  .gallery-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .gallery-new{min-height:220px;padding:18px 12px}
+  .gallery-thumb,.gallery-sheet{height:120px}
+  .gallery-card-foot .gallery-open-btn{min-height:36px}
+  .gallery-menu-btn{width:34px;height:34px}
 }
 
 .panel .switch-row{
@@ -464,6 +492,9 @@ select.wide-input{appearance:none;background-image:linear-gradient(45deg,transpa
   .gallery-views{margin-left:0;align-self:flex-end}
   .gallery-search kbd{display:none}
   .gallery-grid.is-list .gallery-card{grid-template-columns:1fr}
+  .gallery-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .gallery-new{min-height:180px}
+  .pair-grid,.meta-row{grid-template-columns:1fr}
 }
 
 .app[data-screen="cut"]{
@@ -601,11 +632,39 @@ select.wide-input{appearance:none;background-image:linear-gradient(45deg,transpa
 
 @media (max-width: 980px){
   .app[data-screen="cut"]{height:auto;max-height:none;overflow:auto}
-  .app[data-screen="cut"] .main{height:auto;overflow:visible;padding-bottom:94px}
-  .app[data-screen="cut"] .layout{display:grid;grid-template-columns:1fr;height:auto}
-  .app[data-screen="cut"] .canvas-wrap{height:min(52vh,420px);flex:none}
-  .cut-panel{height:auto;max-height:none;overflow:visible}
+  .app[data-screen="cut"] .main{
+    height:auto;overflow:visible;
+    padding:calc(8px + env(safe-area-inset-top)) 10px calc(88px + env(safe-area-inset-bottom))
+  }
+  .app[data-screen="cut"] .mobile-brand{margin-bottom:8px}
+  .app[data-screen="cut"] .layout{
+    display:grid;grid-template-columns:1fr;height:auto;gap:10px
+  }
+  .app[data-screen="cut"] .cut-stage{order:1}
+  .app[data-screen="cut"] .cut-panel{order:2}
+  .app[data-screen="cut"] .canvas-wrap{
+    height:min(56dvh,460px);flex:none;border-radius:16px
+  }
+  .app[data-screen="cut"] .thumbs{padding:10px;border-radius:14px}
+  .app[data-screen="cut"] .thumb{flex-basis:68px;width:68px;height:68px}
+  .cut-panel{
+    height:auto;max-height:none;overflow:visible;padding:12px;border-radius:16px
+  }
   .cut-panel .panel-block{grid-template-rows:auto;overflow:visible}
-  .cut-panel-body{overflow:visible}
+  .cut-panel-body{overflow:visible;gap:8px}
+  .cut-panel .field.compact,
+  .cut-panel .row.compact,
+  .cut-grid .switch-mini.cut-center,
+  .cut-range{min-height:40px;padding:8px 10px;border-radius:10px}
+  .cut-panel .field.compact span,
+  .cut-panel .row.compact label{font-size:12px;max-width:55%}
+  .cut-panel .field.compact input,
+  .cut-panel .field.compact strong{font-size:13px}
+  .cut-panel .btn,
+  .cut-panel .btn.tiny{min-height:40px;padding:10px 8px;font-size:12px}
+  .cut-panel .counter button,.cut-panel .counter span{width:28px;height:28px;font-size:13px}
+  .cut-nudge-row{grid-template-columns:44px minmax(0,1fr) 44px}
+  .cut-keys{display:none}
+  .cut-panel-head h3{font-size:11px}
 }
 
