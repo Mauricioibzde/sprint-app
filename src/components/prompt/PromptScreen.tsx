@@ -337,6 +337,7 @@ export function PromptScreen() {
                         <button
                           type="button"
                           role="option"
+                          aria-selected={false}
                           key={preset.name}
                           className={"clip-preset-chip" + (exists ? " in-list" : "")}
                           disabled={atClipLimit}

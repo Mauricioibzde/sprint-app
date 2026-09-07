@@ -1046,7 +1046,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       }
 
       const name = projectName.trim() || nameFromFile(fileName);
-      let id = !asNew && currentProjectId ? currentProjectId : newProjectId();
+      const id = !asNew && currentProjectId ? currentProjectId : newProjectId();
       let slug = !asNew && currentSlug ? currentSlug : slugifyName(name);
       if (asNew || !currentProjectId) {
         let n = 2;

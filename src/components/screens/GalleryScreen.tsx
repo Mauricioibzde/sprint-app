@@ -171,7 +171,7 @@ export function GalleryScreen() {
     }
   };
 
-  const useExample = (ex: GalleryExample) => {
+  const openExample = (ex: GalleryExample) => {
     setMenuKey(null);
     app.startNewProject({ name: ex.name, prompt: ex.prompt });
   };
@@ -368,7 +368,7 @@ export function GalleryScreen() {
             <li key={item.id}>
               <article className="gallery-card is-example">
                 <div className="gallery-card-media">
-                  <button type="button" className="gallery-open" onClick={() => useExample(item)}>
+                  <button type="button" className="gallery-open" onClick={() => openExample(item)}>
                     <ExampleThumb motif={item.motif} cols={item.cols} rows={item.rows} />
                   </button>
                   <span className="gallery-example-badge">Exemplo</span>
@@ -376,7 +376,7 @@ export function GalleryScreen() {
                     open={menuOpen}
                     onToggle={() => setMenuKey(menuOpen ? null : item.id)}
                   >
-                    <button type="button" className="gallery-menu-item" onClick={() => useExample(item)}>
+                    <button type="button" className="gallery-menu-item" onClick={() => openExample(item)}>
                       Usar modelo
                     </button>
                   </CardMenu>
@@ -398,14 +398,14 @@ export function GalleryScreen() {
                   </ul>
                 </div>
                 <div className="gallery-card-foot">
-                  <button type="button" className="btn tiny gallery-open-btn" onClick={() => useExample(item)}>
+                  <button type="button" className="btn tiny gallery-open-btn" onClick={() => openExample(item)}>
                     <Folder size={14} strokeWidth={1.75} /> Abrir
                   </button>
                   <CardMenu
                     open={menuOpen}
                     onToggle={() => setMenuKey(menuOpen ? null : item.id)}
                   >
-                    <button type="button" className="gallery-menu-item" onClick={() => useExample(item)}>
+                    <button type="button" className="gallery-menu-item" onClick={() => openExample(item)}>
                       Usar modelo
                     </button>
                   </CardMenu>
