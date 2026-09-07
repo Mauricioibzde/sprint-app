@@ -1,0 +1,3015 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>SpriteCut PRO</title>
+  <style>
+    :root{
+      --bg:#07111e;
+      --panel:#0d1a29;
+      --panel-2:#101f31;
+      --panel-3:#0a1624;
+      --line:#1f3650;
+      --muted:#8ea6c1;
+      --text:#f7fbff;
+      --yellow:#ffd52a;
+      --yellow-2:#ffea72;
+      --green:#00ff66;
+      --cyan:#00e7ff;
+      --red:#ff4d57;
+      --shadow:0 18px 50px rgba(0,0,0,.35);
+      --radius:18px;
+      --guide:#00e7ff;
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:
+      radial-gradient(circle at top left, rgba(19,54,88,.24), transparent 28%),
+      linear-gradient(180deg,#07111e 0%,#08131f 100%);
+      color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    button,input{font:inherit}
+    button{cursor:pointer}
+    .app{min-height:100vh;display:grid;grid-template-columns:220px minmax(0,1fr)}
+    .sidebar{
+      position:sticky;top:0;height:100vh;padding:22px 14px;border-right:1px solid var(--line);
+      background:linear-gradient(180deg,#0a1726,#0a1420 75%);
+    }
+    .brand{display:flex;align-items:center;gap:12px;margin:2px 8px 24px}
+    .brandmark{width:42px;height:42px;border-radius:12px;background:var(--yellow);color:#111;display:grid;place-items:center;font-weight:900}
+    .brand h1{font-size:21px;line-height:1;margin:0}
+    .brand small{color:var(--muted)}
+    .nav{display:grid;gap:8px}
+    .nav button{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:#b9c8d9;padding:13px 14px;border-radius:12px}
+    .nav button.active{background:rgba(255,213,42,.13);border-color:rgba(255,213,42,.25);color:white}
+    .nav button:hover{background:#102033}
+    .tip{position:absolute;left:14px;right:14px;bottom:18px;background:#0e1e31;border:1px solid var(--line);border-radius:14px;padding:14px;color:#b9c8d9;font-size:12px}
+
+    .main{min-width:0;padding:20px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+    .title h2{font-size:34px;line-height:1.05;margin:0 0 6px}
+    .title p{margin:0;color:var(--muted)}
+    .actions{display:flex;gap:10px}
+    .btn{
+      border:1px solid var(--line);background:#0c1928;color:white;padding:11px 15px;border-radius:12px;font-weight:700
+    }
+    .btn.primary{background:var(--yellow);color:#121212;border-color:transparent}
+    .btn.ghost{background:#0b1725}
+    .btn.danger{border-color:#7d2d34;color:#ffb4b8}
+
+    .chrome-bar{
+      display:flex;align-items:center;gap:8px;margin-bottom:8px;
+      background:rgba(13,26,41,.72);border:1px solid var(--line);border-radius:10px;
+      padding:4px 6px 4px 8px;min-height:34px;
+    }
+    .chrome-bar.collapsed{min-height:28px;padding:2px 6px 2px 8px}
+    .chrome-bar.collapsed .chrome-extra,
+    .chrome-bar.collapsed #file-meta,
+    .chrome-bar.collapsed .tabs,
+    .chrome-bar.collapsed #btn-swap{display:none}
+    .chrome-toggle{
+      flex:0 0 auto;width:28px;height:26px;border:1px solid transparent;border-radius:7px;
+      background:transparent;color:#9db4cb;display:grid;place-items:center;font-size:12px;padding:0;
+    }
+    .chrome-toggle:hover{background:#122033;border-color:var(--line);color:white}
+    .chrome-bar:not(.collapsed) .chrome-toggle .chev{transform:rotate(180deg);display:inline-block}
+    .chrome-bar.collapsed .chrome-toggle .chev{display:inline-block}
+    .chrome-body{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+    .filemeta{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
+    .fileicon{
+      width:22px;height:22px;border:1px solid #315270;border-radius:6px;display:grid;place-items:center;
+      background:#11243a;font-size:11px;flex:0 0 auto
+    }
+    .filemeta strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:700;line-height:1.15}
+    .filemeta span{color:var(--muted);font-size:10px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .btn.tiny{
+      border:1px solid var(--line);background:#0c1928;color:#c9d8e8;padding:4px 8px;border-radius:7px;
+      font-weight:650;font-size:11px;line-height:1;white-space:nowrap;flex:0 0 auto
+    }
+    .btn.tiny:hover{background:#122033;color:white}
+    .tabs{display:flex;gap:3px;flex:0 0 auto;background:#081522;border:1px solid var(--line);border-radius:8px;padding:2px}
+    .tab{
+      flex:0 0 auto;border:0;background:transparent;color:#9eb3c7;padding:4px 9px;border-radius:6px;
+      font-weight:700;font-size:11px;line-height:1.2
+    }
+    .tab.active{color:#111;background:var(--yellow)}
+    .tab:hover:not(.active){color:white;background:#102033}
+    .chrome-hint{display:none;color:var(--muted);font-size:10px;white-space:nowrap}
+    .chrome-bar.collapsed .chrome-hint{display:inline}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px}
+
+    .workspace{
+      min-width:0;background:var(--panel-3);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)
+    }
+    .toolbar{
+      display:flex;align-items:center;gap:4px;padding:4px 6px;border-bottom:1px solid var(--line);
+      background:#0d1b2b;flex-wrap:nowrap;min-height:32px
+    }
+    .toolbtn{
+      border:1px solid #2a4663;background:#0d1b2b;color:#d5e4f2;border-radius:6px;
+      min-width:26px;height:24px;padding:0 7px;font-size:11px;font-weight:650;line-height:1
+    }
+    .toolbtn.active{background:var(--yellow);color:#111;border-color:transparent}
+    .toolbtn:hover:not(.active){background:#122033;color:white}
+    .zoomvalue{color:#dbe9f6;min-width:36px;text-align:center;font-weight:700;font-size:11px}
+    .spacer{flex:1}
+
+    .canvas-wrap{position:relative;height:min(74vh,680px);overflow:hidden;background:
+      linear-gradient(45deg,#0b1724 25%,transparent 25%),
+      linear-gradient(-45deg,#0b1724 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#0b1724 75%),
+      linear-gradient(-45deg,transparent 75%,#0b1724 75%);
+      background-size:22px 22px;background-position:0 0,0 11px,11px -11px,-11px 0;
+    }
+    .canvas-wrap:fullscreen{height:100%;border-radius:0}
+    .ruler-x,.ruler-y{position:absolute;background:#0b1724;color:#8099b2;font-size:10px;z-index:5}
+    .ruler-x{left:34px;right:0;top:0;height:28px;border-bottom:1px solid #26425d;
+      background-image:repeating-linear-gradient(to right,transparent 0 63px,#3a607f 63px 64px)}
+    .ruler-y{top:28px;bottom:0;left:0;width:34px;border-right:1px solid #26425d;
+      background-image:repeating-linear-gradient(to bottom,transparent 0 63px,#3a607f 63px 64px)}
+    .ruler-x span{position:absolute;top:7px}
+    .ruler-y span{position:absolute;left:6px}
+    .hide-rulers .ruler-x,.hide-rulers .ruler-y{display:none}
+    .hide-minimap .minimap{display:none}
+
+    .stage{
+      position:absolute;left:34px;right:0;top:28px;bottom:0;
+      display:block;overflow:auto;padding:24px;
+      scrollbar-gutter:stable;
+    }
+    .sheet{
+      position:relative;width:min(100%,900px);aspect-ratio:4608 / 1792;background:#000;border:1px solid #17324a;
+      box-shadow:0 14px 44px rgba(0,0,0,.45);overflow:visible;flex-shrink:0;margin:0 auto;
+    }
+    .grid{
+      position:absolute;left:17%;right:3%;top:4%;bottom:4%;
+      display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(7,1fr);gap:3px;z-index:1;
+      pointer-events:none;
+    }
+    .label{
+      position:absolute;left:1.5%;width:14%;font-size:clamp(9px,1vw,14px);font-weight:900;text-align:center;color:white;
+      transform:translateY(-50%);z-index:1;pointer-events:none;
+    }
+    .sheet.has-image .label{display:none}
+    .cell{
+      border:1px solid transparent;position:relative;display:grid;place-items:center;
+      overflow:hidden;cursor:pointer;pointer-events:auto;background:transparent;
+    }
+    .cell.active{outline:2px solid var(--yellow);outline-offset:-2px;background:rgba(255,213,42,.1)}
+    .cell-num{font-size:clamp(10px,1.2vw,13px);color:rgba(255,255,255,.35);font-weight:700;pointer-events:none}
+    .sheet.has-image .cell-num{display:none}
+
+    .frame-marks{position:absolute;inset:0;z-index:2;pointer-events:none}
+    .frame-mark{
+      position:absolute;box-sizing:border-box;
+      border:2px solid var(--green);
+      box-shadow:0 0 0 1px rgba(0,0,0,.35), inset 0 0 0 1px rgba(0,255,102,.15);
+      border-radius:1px;
+    }
+    .frame-mark.active{
+      border-color:var(--yellow);
+      box-shadow:0 0 10px rgba(255,213,42,.55), inset 0 0 0 1px rgba(255,213,42,.25);
+    }
+    .guides-hidden .frame-mark{opacity:.35}
+    .guide{position:absolute;background:var(--guide);z-index:4;opacity:.95;box-shadow:0 0 8px color-mix(in srgb, var(--guide) 35%, transparent);touch-action:none;user-select:none;cursor:grab}
+    .guide.v{top:0;bottom:0;width:2px}
+    .guide.h{left:0;right:0;height:2px}
+    .guide.v::after,.guide.h::after{content:"";position:absolute;inset:0}
+    .guide.v::after{left:-10px;right:-10px}
+    .guide.h::after{top:-10px;bottom:-10px}
+    .guide::before{content:"";position:absolute;width:12px;height:12px;border-radius:50%;background:var(--guide);border:2px solid #082237;z-index:1}
+    .guide.v::before{top:4px;left:-6px}
+    .guide.h::before{left:4px;top:-6px}
+    .guide.selected,.guide.drag-unlocked{background:var(--yellow);box-shadow:0 0 12px rgba(255,213,42,.55)}
+    .guide.selected::before,.guide.drag-unlocked::before{background:var(--yellow)}
+    .guide-tag{position:absolute;z-index:6;background:#12314a;border:1px solid #2d6689;color:#d9f7ff;padding:5px 8px;border-radius:8px;font-size:11px}
+    .guide-tag.y{right:12px;top:45%}
+    .guide-tag.x{bottom:10px;left:48%}
+    .guides-hidden .guide,.guides-hidden .guide-tag{display:none}
+
+    .sheet-image{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;z-index:0;display:none}
+    .sheet.has-image .sheet-image{display:block}
+
+    .canvas-wrap.tool-pan{cursor:grab}
+    .canvas-wrap.tool-pan.dragging{cursor:grabbing}
+    .canvas-wrap.tool-pan .guide{pointer-events:none}
+
+    .minimap{position:absolute;right:14px;bottom:14px;width:150px;height:92px;border:1px solid #365571;background:#081522;border-radius:12px;padding:8px;z-index:8}
+    .minimap-inner{height:100%;background:#000;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(7,1fr);gap:1px;padding:4px}
+    .minimap-inner i{border:1px solid #1dff58;display:block;min-width:0;min-height:0;background:#000;overflow:hidden;transition:border-color .12s,box-shadow .12s;position:relative}
+    .minimap-inner i canvas{width:100%;height:100%;display:block;object-fit:contain;image-rendering:pixelated}
+    .minimap-inner i.active{
+      border-color:var(--yellow);
+      box-shadow:0 0 6px rgba(255,213,42,.75)
+    }
+    .viewport{position:absolute;border:2px solid var(--yellow);left:30%;top:22%;width:50%;height:50%;pointer-events:none}
+
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:grid;gap:12px;align-content:start}
+    .panel h3{font-size:14px;margin:0;color:#c7d8e9;letter-spacing:.04em}
+    .panel-block{display:none;gap:12px}
+    .panel[data-mode="guides"] #panel-guides,
+    .panel[data-mode="view"] #panel-view,
+    .panel[data-mode="adjust"] #panel-adjust{display:grid}
+    .seg{display:grid;grid-template-columns:1fr 1fr;background:#0a1724;border:1px solid var(--line);border-radius:10px;padding:3px}
+    .seg button{border:0;background:transparent;color:#a9bed1;padding:9px;border-radius:8px}
+    .seg button.active{background:#1468e8;color:white}
+    .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .row label{color:#b9c9d8;font-size:13px}
+    .counter{display:flex;align-items:center;background:#0a1724;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+    .counter button,.counter span{width:38px;height:36px;border:0;background:transparent;color:white;display:grid;place-items:center}
+    .counter button{background:#102035}
+    .field{display:flex;align-items:center;justify-content:space-between;background:#0a1724;border:1px solid var(--line);border-radius:10px;padding:9px 10px;color:#d8e7f6}
+    .field input{width:90px;border:0;outline:0;background:transparent;color:white;text-align:right}
+    .colorchip{width:22px;height:22px;border-radius:6px;background:var(--guide);box-shadow:0 0 10px color-mix(in srgb, var(--guide) 25%, transparent);cursor:pointer;position:relative}
+    .colorchip input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .range{accent-color:var(--yellow);width:100%}
+    .panel .btn{width:100%}
+    .info{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:9px}
+    .hint{font-size:12px;color:var(--muted);line-height:1.5}
+
+    .thumbs{margin-top:14px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px}
+    .thumb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .thumb-list{display:flex;gap:8px;overflow:auto;padding-bottom:4px}
+    .thumb{
+      flex:0 0 84px;width:84px;height:84px;aspect-ratio:1/1;border:1px solid var(--green);border-radius:10px;
+      background:#02070b;display:grid;place-items:center;position:relative;cursor:pointer;overflow:hidden
+    }
+    .thumb canvas{max-width:100%;max-height:100%;width:auto;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
+    .thumb.active{border:3px solid var(--yellow)}
+    .thumb b{position:absolute;top:4px;left:5px;font-size:10px;background:#0d1823;padding:2px 5px;border-radius:5px;z-index:1}
+    .thumb.active b{background:var(--yellow);color:#111}
+    .thumb.empty{opacity:.55;border-style:dashed}
+
+    .toast{
+      position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);
+      background:#12314a;border:1px solid #2d6689;color:#e8f7ff;padding:12px 16px;border-radius:12px;
+      box-shadow:var(--shadow);z-index:100;opacity:0;pointer-events:none;transition:.22s ease;max-width:min(92vw,420px);text-align:center;font-size:14px
+    }
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.ok{border-color:rgba(0,255,102,.45)}
+    .toast.warn{border-color:rgba(255,213,42,.45)}
+
+    .view-cut{display:contents}
+    .app[data-screen]:not([data-screen="cut"]) .view-cut{display:none}
+    .screen-page{
+      display:none;min-height:60vh;background:var(--panel);border:1px solid var(--line);
+      border-radius:var(--radius);padding:28px;margin-top:8px
+    }
+    .app[data-screen="batch"] #screen-batch,
+    .app[data-screen="animate"] #screen-animate,
+    .app[data-screen="settings"] #screen-settings,
+    .app[data-screen="history"] #screen-history,
+    .app[data-screen="about"] #screen-about{display:block}
+
+    .anim-layout{
+      display:grid;grid-template-columns:minmax(240px,1fr) minmax(220px,320px);gap:16px;align-items:start
+    }
+    .anim-stage{
+      background:#06101c;border:1px solid var(--line);border-radius:14px;padding:16px;
+      display:flex;flex-direction:column;gap:12px;min-height:420px
+    }
+    .anim-canvas-wrap{
+      flex:1;display:flex;align-items:center;justify-content:center;
+      background:
+        linear-gradient(45deg,#0a1624 25%,transparent 25%),
+        linear-gradient(-45deg,#0a1624 25%,transparent 25%),
+        linear-gradient(45deg,transparent 75%,#0a1624 75%),
+        linear-gradient(-45deg,transparent 75%,#0a1624 75%);
+      background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;
+      background-color:#081522;border-radius:12px;min-height:280px;overflow:hidden
+    }
+    #anim-canvas{max-width:100%;max-height:min(52vh,420px);image-rendering:pixelated;image-rendering:crisp-edges}
+    .anim-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .anim-controls .btn{width:auto;min-width:42px}
+    .anim-controls .btn.playing{border-color:rgba(0,255,102,.5);color:#9dffc0}
+    .anim-meta{display:flex;flex-wrap:wrap;gap:10px 16px;color:#9eb6cc;font-size:13px}
+    .anim-meta strong{color:#e8f7ff}
+    .anim-side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+    .anim-side h3{margin:0;font-size:13px;letter-spacing:.06em;color:#c7d8e9}
+    .anim-strip{
+      display:flex;gap:6px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin
+    }
+    .anim-strip button{
+      flex:0 0 auto;width:64px;height:64px;border-radius:8px;border:1px solid #2a4d6a;
+      background:#0c1c2c;padding:4px;overflow:hidden;cursor:pointer;position:relative;
+      display:grid;place-items:center
+    }
+    .anim-strip button.active{border-color:var(--yellow);box-shadow:0 0 0 1px rgba(255,213,42,.35)}
+    .anim-strip button canvas{max-width:100%;max-height:100%;width:auto;height:auto;display:block;image-rendering:pixelated}
+    .hidden-file{position:absolute;width:0;height:0;opacity:0;pointer-events:none;overflow:hidden}
+    .anim-strip-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:4px 0 2px}
+    .anim-strip-bar .btn{width:auto;padding:7px 10px;font-size:12px}
+    .anim-strip-bar .sel-count{font-size:12px;color:#9eb6cc}
+    .anim-strip-bar .sel-count strong{color:#e8f7ff}
+    .anim-strip button.export-off{opacity:.38;border-style:dashed}
+    .anim-strip button .pick{
+      position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:3px;
+      border:1px solid #7aa0bf;background:#081522;display:grid;place-items:center;
+      font-size:9px;color:transparent;line-height:1;z-index:2;padding:0
+    }
+    .anim-strip button.export-on .pick{background:var(--green);border-color:var(--green);color:#062015}
+    .anim-strip button.export-on .pick::after{content:"✓";color:#062015;font-weight:900}
+    .anim-strip button span{
+      position:absolute;left:3px;bottom:2px;font-size:9px;background:rgba(0,0,0,.65);
+      color:#fff;padding:1px 3px;border-radius:3px
+    }
+    .anim-row-list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+    .anim-row-list button{
+      text-align:left;border:1px solid var(--line);background:#0c1c2c;color:#d5e6f5;
+      border-radius:10px;padding:8px 10px;cursor:pointer;font-size:13px
+    }
+    .anim-row-list button.active{border-color:var(--cyan);background:#10283d}
+    @media (max-width: 900px){
+      .anim-layout{grid-template-columns:1fr}
+    }
+    .prompt-box{
+      width:100%;min-height:220px;resize:vertical;box-sizing:border-box;
+      background:#081522;border:1px solid var(--line);border-radius:12px;color:#d8e7f6;
+      padding:12px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+      font-size:12px;line-height:1.45;white-space:pre-wrap
+    }
+    .spec-grid{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0 16px
+    }
+    .spec-grid .field{margin:0}
+    .prompt-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 18px}
+    .prompt-actions .btn{width:auto}
+
+    .mobile-bottom{display:none}
+
+    @media (max-width: 980px){
+      .app{display:block}
+      .sidebar{display:none}
+      .main{padding:12px;padding-bottom:94px}
+      .topbar{align-items:flex-start}
+      .title h2{font-size:28px}
+      .actions .ghost{display:none}
+      .actions .primary{padding:10px 12px}
+      .layout{grid-template-columns:1fr}
+      .panel{order:-1}
+      .canvas-wrap{height:min(62vh,520px)}
+      .mobile-bottom{
+        display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;
+        padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(7,17,30,.96);
+        border-top:1px solid var(--line);backdrop-filter:blur(18px);z-index:50
+      }
+      .mobile-bottom button{border:0;background:transparent;color:#aabed0;padding:8px 3px;font-size:11px}
+      .mobile-bottom button.active{color:var(--yellow)}
+      .chrome-bar{position:sticky;top:0;z-index:20;backdrop-filter:blur(10px)}
+      .chrome-bar .btn.tiny{display:none}
+      .filemeta span{display:none}
+      .tab{padding:4px 7px;font-size:10px}
+      .minimap{width:112px;height:70px}
+      .toast{bottom:96px}
+    }
+
+    @media (max-width: 640px){
+      .topbar{gap:8px}
+      .title p{font-size:13px}
+      .actions{align-self:stretch}
+      .actions .primary{font-size:13px}
+      .tabs{gap:2px}
+      .tab{padding:4px 6px;font-size:10px}
+      .panel{padding:12px}
+      .toolbar{gap:3px;padding:3px 5px;min-height:28px}
+      .toolbtn{min-width:24px;height:22px;padding:0 5px;font-size:10px;border-radius:5px}
+      .toolbar .desktop-only{display:none}
+      .zoomvalue{min-width:32px;font-size:10px}
+      .canvas-wrap{height:min(58vh,470px)}
+      .stage{padding:16px}
+      .ruler-x{left:28px;height:24px}
+      .ruler-y{top:24px;width:28px}
+      .stage{left:28px;top:24px}
+      .label{font-size:10px}
+      .fox{font-size:22px}
+      .thumb{flex-basis:72px;width:72px;height:72px}
+      .thumbs{margin-top:10px}
+      .guide-tag.y{right:8px}
+      .guide-tag.x{left:42%}
+    }
+  </style>
+</head>
+<body>
+<div class="app" data-screen="cut" id="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brandmark">✦</div>
+      <div><h1>SpriteCut <span style="color:var(--yellow)">PRO</span></h1><small>Extraia frames com precisão</small></div>
+    </div>
+    <div class="nav" id="side-nav">
+      <button type="button" class="active" data-screen="cut">✂ Recortar Frames</button>
+      <button type="button" data-screen="cut" data-focus="guides">⊞ Adicionar Guias</button>
+      <button type="button" data-screen="animate">▶ Animar Frames</button>
+      <button type="button" data-screen="batch">▦ Lote</button>
+      <button type="button" data-screen="settings">⚙ Configurações</button>
+      <button type="button" data-screen="history">◷ Histórico</button>
+      <button type="button" data-screen="about">ⓘ Prompt teste</button>
+    </div>
+    <div class="tip"><b>💡 Dica</b><br><br>Fluxo: abrir imagem → <b>Detectar grade</b> → ajustar guias → <b>Animar</b> → <b>Exportar ZIP</b>.</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="title">
+        <h2 id="page-title">Recortar Frames</h2>
+        <p id="page-sub">Manipule as linhas guias e ajuste cada corte com precisão.</p>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn ghost" id="btn-open">📂 Abrir imagem</button>
+        <button type="button" class="btn primary" id="btn-export">⬆ Exportar ZIP</button>
+      </div>
+    </header>
+
+    <input type="file" id="file-input" class="hidden-file" accept="image/*" />
+    <input type="file" id="batch-input" class="hidden-file" accept="image/*" multiple />
+
+    <div class="view-cut">
+      <section class="chrome-bar" id="chrome-bar" aria-label="Arquivo e modos">
+        <button type="button" class="chrome-toggle" id="btn-chrome-toggle" title="Recolher / expandir" aria-expanded="true"><span class="chev">▾</span></button>
+        <div class="chrome-body">
+          <div class="filemeta">
+            <div class="fileicon">🖼</div>
+            <div style="min-width:0">
+              <strong id="file-name">Nenhuma imagem</strong>
+              <span id="file-meta">Abra uma spritesheet para começar</span>
+            </div>
+          </div>
+          <span class="chrome-hint" id="chrome-hint">Guias</span>
+          <div class="tabs" id="main-tabs" role="tablist">
+            <button type="button" class="tab" data-tab="view">Visualizar</button>
+            <button type="button" class="tab active" data-tab="guides">Guias</button>
+            <button type="button" class="tab" data-tab="adjust">Ajustes</button>
+          </div>
+          <button type="button" class="btn tiny" id="btn-swap" title="Trocar imagem">↻ Trocar</button>
+        </div>
+      </section>
+
+      <div class="layout">
+        <section>
+          <div class="workspace">
+            <div class="toolbar">
+              <button type="button" class="toolbtn" id="btn-zoom-out" title="Diminuir zoom">−</button>
+              <button type="button" class="toolbtn" id="btn-zoom-in" title="Aumentar zoom">＋</button>
+              <span class="zoomvalue" id="zoom-value">100%</span>
+              <button type="button" class="toolbtn desktop-only" id="btn-zoom-fit">Ajustar</button>
+              <button type="button" class="toolbtn desktop-only" id="btn-zoom-100">1:1</button>
+              <div class="spacer"></div>
+              <button type="button" class="toolbtn" id="tool-pan" title="Mover canvas">✋</button>
+              <button type="button" class="toolbtn active" id="tool-guides" title="Manipular guias">⌖</button>
+              <button type="button" class="toolbtn" id="btn-fullscreen" title="Tela cheia">⛶</button>
+            </div>
+
+            <div class="canvas-wrap tool-guides" id="canvas-wrap">
+              <div class="ruler-x" id="ruler-x">
+                <span style="left:4%">0</span><span style="left:18%">1024</span><span style="left:35%">2048</span><span style="left:52%">3072</span><span style="left:68%">4096</span><span style="left:85%">5120</span>
+              </div>
+              <div class="ruler-y" id="ruler-y">
+                <span style="top:4%">0</span><span style="top:28%">512</span><span style="top:53%">1024</span><span style="top:78%">1536</span>
+              </div>
+
+              <div class="stage" id="stage">
+                <div class="sheet" id="sheet">
+                  <img class="sheet-image" id="sheet-image" alt="Spritesheet" />
+                  <div class="grid" id="frame-grid"></div>
+                  <div class="frame-marks" id="frame-marks"></div>
+                  <div id="row-labels"></div>
+
+                  <div class="guide v" style="left:17%"></div>
+                  <div class="guide v" style="left:27%"></div>
+                  <div class="guide v" style="left:37%"></div>
+                  <div class="guide v" style="left:47%"></div>
+                  <div class="guide v" style="left:57%"></div>
+                  <div class="guide v" style="left:67%"></div>
+                  <div class="guide v" style="left:77%"></div>
+                  <div class="guide v" style="left:87%"></div>
+                  <div class="guide v" style="left:97%"></div>
+
+                  <div class="guide h" style="top:4%"></div>
+                  <div class="guide h" style="top:17.2%"></div>
+                  <div class="guide h" style="top:30.4%"></div>
+                  <div class="guide h" style="top:43.6%"></div>
+                  <div class="guide h" style="top:56.8%"></div>
+                  <div class="guide h" style="top:70%"></div>
+                  <div class="guide h" style="top:83.2%"></div>
+                  <div class="guide h" style="top:96.4%"></div>
+
+                  <div class="guide-tag y">Y: 512 px</div>
+                  <div class="guide-tag x">X: 2048 px</div>
+                </div>
+              </div>
+
+              <div class="minimap" id="minimap">
+                <div class="minimap-inner" id="mini"></div>
+                <div class="viewport" id="mini-viewport"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="thumbs">
+            <div class="thumb-head">
+              <strong id="thumbs-title">Frames (0)</strong>
+              <span style="color:var(--muted);font-size:12px" id="thumbs-status">Nenhum frame</span>
+            </div>
+            <div class="thumb-list" id="thumbs"></div>
+          </div>
+        </section>
+
+        <aside class="panel" id="side-panel" data-mode="guides">
+          <div id="panel-guides" class="panel-block">
+            <h3>GUIAS DE RECORTE</h3>
+            <div class="seg" id="guide-axis-seg">
+              <button type="button" data-axis="v" class="active">Colunas</button>
+              <button type="button" data-axis="h">Linhas</button>
+            </div>
+
+            <div class="row">
+              <label>Colunas</label>
+              <div class="counter" id="cols-counter"><button type="button" data-delta="-1">−</button><span>8</span><button type="button" data-delta="1">+</button></div>
+            </div>
+            <div class="row">
+              <label>Linhas</label>
+              <div class="counter" id="rows-counter"><button type="button" data-delta="-1">−</button><span>7</span><button type="button" data-delta="1">+</button></div>
+            </div>
+
+            <div class="field"><span>Posição da guia</span><input id="guide-pos" value="2048 px" /></div>
+            <div class="field"><span>Espaçamento X</span><input id="gap-x" value="0 px" /></div>
+            <div class="field"><span>Espaçamento Y</span><input id="gap-y" value="0 px" /></div>
+            <div class="field"><span>Folga mín. (arte)</span><input id="safe-margin" value="12 px" /></div>
+
+            <div class="row">
+              <label>Cor da guia</label>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="colorchip" id="guide-color-chip"><input type="color" id="guide-color" value="#00e7ff" /></div>
+                <span style="font-size:12px" id="guide-color-label">#00E7FF</span>
+              </div>
+            </div>
+
+            <label style="font-size:13px;color:#b9c9d8">Espessura visual</label>
+            <input class="range" id="guide-thickness" type="range" min="1" max="6" value="2">
+
+            <div class="row">
+              <button type="button" class="btn" id="btn-add-guide">＋ Adicionar guia</button>
+              <button type="button" class="btn danger" id="btn-remove-guide">🗑 Remover</button>
+            </div>
+
+            <button type="button" class="btn" id="btn-detect-grid">◎ Detectar grade</button>
+            <button type="button" class="btn" id="btn-apply-preset">▦ Aplicar preset do prompt</button>
+            <p class="hint" style="margin:0">Preset: 4608×1792 · labels 512px · células 512×256 · folga mín. 12px · 8×7. O corte usa a célula inteira e as guias se afastam da arte.</p>
+            <button type="button" class="btn" id="btn-reset-guides">↺ Redefinir guias</button>
+            <button type="button" class="btn primary" id="btn-apply-guides">✓ Aplicar guias</button>
+
+            <div class="info">
+              <h3>GUIA SELECIONADA</h3>
+              <div class="field"><span>Tipo</span><strong id="sel-type">Vertical</strong></div>
+              <div class="field"><span id="sel-pos-label">Posição X</span><strong id="sel-pos">2048 px</strong></div>
+              <div class="row">
+                <button type="button" class="btn" id="btn-nudge-neg">← 1 px</button>
+                <button type="button" class="btn" id="btn-nudge-pos">1 px →</button>
+              </div>
+              <p class="hint">Arraste a guia ou use ±1 px. Teclado: setas / [ ] e Delete.</p>
+            </div>
+          </div>
+
+          <div id="panel-view" class="panel-block">
+            <h3>VISUALIZAÇÃO</h3>
+            <p class="hint">Guias ocultas para inspecionar os frames.</p>
+            <div class="field"><span>Frames</span><strong id="view-frames">56</strong></div>
+            <div class="field"><span>Grade</span><strong id="view-grid">8 × 7</strong></div>
+            <div class="field"><span>Selecionado</span><strong id="view-selected">Frame 1</strong></div>
+            <button type="button" class="btn" id="btn-show-guides">▦ Mostrar guias</button>
+          </div>
+
+          <div id="panel-adjust" class="panel-block">
+            <h3>AJUSTES DE PREVIEW</h3>
+            <label style="font-size:13px;color:#b9c9d8">Brilho</label>
+            <input class="range" id="adj-brightness" type="range" min="50" max="150" value="100">
+            <label style="font-size:13px;color:#b9c9d8">Contraste</label>
+            <input class="range" id="adj-contrast" type="range" min="50" max="150" value="100">
+            <label style="font-size:13px;color:#b9c9d8">Opacidade das células</label>
+            <input class="range" id="adj-opacity" type="range" min="20" max="100" value="100">
+            <button type="button" class="btn" id="btn-reset-adjust">↺ Redefinir ajustes</button>
+            <p class="hint">Só afetam a pré-visualização.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <section class="screen-page" id="screen-animate">
+      <div class="anim-layout">
+        <div class="anim-stage">
+          <div class="anim-canvas-wrap">
+            <canvas id="anim-canvas" width="512" height="256" aria-label="Preview da animação"></canvas>
+          </div>
+          <div class="anim-controls">
+            <button type="button" class="btn" id="anim-prev" title="Frame anterior">⏮</button>
+            <button type="button" class="btn primary" id="anim-play" title="Play / Pause">▶ Play</button>
+            <button type="button" class="btn" id="anim-next" title="Próximo frame">⏭</button>
+            <button type="button" class="btn" id="anim-stop" title="Parar">⏹</button>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#b9c9d8">
+              FPS
+              <input id="anim-fps" type="range" min="1" max="30" value="8" style="width:120px">
+              <strong id="anim-fps-val" style="color:#e8f7ff;min-width:28px">8</strong>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#b9c9d8">
+              <input type="checkbox" id="anim-loop" checked> Loop
+            </label>
+          </div>
+          <div class="anim-meta">
+            <span>Clip: <strong id="anim-clip-name">—</strong></span>
+            <span>Frame: <strong id="anim-frame-label">—</strong></span>
+            <span>Tamanho: <strong id="anim-size">—</strong></span>
+            <span>Exportar: <strong id="anim-export-count">0</strong> frames</span>
+          </div>
+          <div class="anim-strip-bar">
+            <button type="button" class="btn" id="anim-pick-all">Marcar todos</button>
+            <button type="button" class="btn" id="anim-pick-none">Limpar</button>
+            <button type="button" class="btn" id="anim-pick-only">Só o atual</button>
+            <span class="sel-count">Clique no ✓ do frame para incluir/excluir do HTML</span>
+          </div>
+          <div class="anim-strip" id="anim-strip" aria-label="Frames do clip"></div>
+          <p class="anim-hint-keys">Atalhos: Espaço play/pause · ← → frames · Esc parar</p>
+        </div>
+        <aside class="anim-side">
+          <h3>CLIPS / LINHAS</h3>
+          <p class="hint" style="margin:0">Escolha a animação (linha) e marque quais frames entram no HTML.</p>
+          <div class="anim-row-list" id="anim-row-list"></div>
+          <div class="field"><span>Modo</span>
+            <select id="anim-mode" style="width:100%;margin-top:6px;background:#081522;border:1px solid var(--line);color:#e8f7ff;border-radius:10px;padding:8px 10px">
+              <option value="row">Por linha (animação)</option>
+              <option value="all">Todos os frames</option>
+              <option value="range">Intervalo</option>
+            </select>
+          </div>
+          <div class="row" id="anim-range-row" style="display:none;gap:8px">
+            <div class="field" style="flex:1;margin:0"><span>De</span><input id="anim-from" value="1" /></div>
+            <div class="field" style="flex:1;margin:0"><span>Até</span><input id="anim-to" value="8" /></div>
+          </div>
+          <button type="button" class="btn" id="anim-refresh">↻ Atualizar da grade</button>
+          <button type="button" class="btn primary" id="anim-export-html">⬇ Exportar HTML animado</button>
+          <button type="button" class="btn" id="anim-export">⬆ Exportar ZIP (todos da grade)</button>
+          <p class="hint" style="margin:0">HTML limpo: só o sprite animado (sem controles), pronto para embutir. FPS e loop seguem os da prévia.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen-page" id="screen-batch">
+      <h2 style="margin-top:0">Processamento em lote</h2>
+      <p class="hint">Abra várias spritesheets com a mesma grade. Cada arquivo é processado com as guias atuais e gera um ZIP próprio.</p>
+      <button type="button" class="btn primary" id="btn-batch-open">📂 Selecionar várias imagens</button>
+      <button type="button" class="btn" id="btn-batch-export" style="width:auto;margin-left:8px" disabled>⬆ Exportar ZIPs do lote</button>
+      <ul id="batch-list" style="margin:16px 0 0;padding-left:18px;color:#b9c8d9"><li>Nenhum arquivo no lote</li></ul>
+      <p class="hint" id="batch-status" style="margin-top:12px"></p>
+    </section>
+    <section class="screen-page" id="screen-settings">
+      <h2 style="margin-top:0">Configurações</h2>
+      <div class="row"><label>Snap ao arrastar</label><input type="checkbox" id="opt-snap" /></div>
+      <div class="row"><label>Mostrar réguas</label><input type="checkbox" id="opt-rulers" checked /></div>
+      <div class="row"><label>Mostrar minimapa</label><input type="checkbox" id="opt-minimap" checked /></div>
+      <div class="row"><label>Usar memória de guias</label><input type="checkbox" id="opt-learn" checked /></div>
+      <p class="hint" id="learn-status" style="margin-top:8px">Memória: —</p>
+      <button type="button" class="btn" id="btn-clear-learn" style="width:auto;margin-top:8px">🗑 Limpar aprendizado</button>
+      <p class="hint" style="margin-top:16px">Quando você move as guias, o app grava o ajuste e reaplica em imagens com a mesma grade (ex.: 8×7).</p>
+    </section>
+    <section class="screen-page" id="screen-history">
+      <h2 style="margin-top:0">Histórico</h2>
+      <ul id="history-list" style="margin:0;padding-left:18px;color:#b9c8d9"></ul>
+    </section>
+    <section class="screen-page" id="screen-about">
+      <h2 style="margin-top:0">Prompt de teste — grade precisa</h2>
+      <p class="hint">Use este prompt num gerador de imagem (ou monte no Figma/Aseprite) para criar a spritesheet padrão do SpriteCut. Fundo 100% transparente (alpha). Sem linhas verdes: o app deve detectar e cortar sozinho.</p>
+
+      <div class="spec-grid">
+        <div class="field"><span>Canvas</span><strong>4608 × 1792</strong></div>
+        <div class="field"><span>Grade</span><strong>8 × 7 (56)</strong></div>
+        <div class="field"><span>Labels</span><strong>512 px</strong></div>
+        <div class="field"><span>Célula</span><strong>512 × 256</strong></div>
+        <div class="field"><span>Gutter/folga</span><strong>12 px mín.</strong></div>
+        <div class="field"><span>Fundo</span><strong>Alpha transparente</strong></div>
+        <div class="field"><span>Guias verdes</span><strong>Não desenhar</strong></div>
+      </div>
+
+      <div class="prompt-actions">
+        <button type="button" class="btn primary" id="btn-copy-prompt">⧉ Copiar prompt</button>
+        <button type="button" class="btn" id="btn-copy-negative">⧉ Copiar negativo</button>
+        <button type="button" class="btn" id="btn-apply-preset-about">▦ Aplicar preset no editor</button>
+      </div>
+
+      <h3 style="margin:0 0 8px;font-size:14px;color:#c7d8e9">PROMPT</h3>
+      <textarea class="prompt-box" id="test-prompt" readonly></textarea>
+
+      <h3 style="margin:18px 0 8px;font-size:14px;color:#c7d8e9">NEGATIVE PROMPT</h3>
+      <textarea class="prompt-box" id="test-negative" readonly style="min-height:90px"></textarea>
+
+      <h3 style="margin:18px 0 8px;font-size:14px;color:#c7d8e9">Como testar</h3>
+      <ol class="hint" style="padding-left:18px;line-height:1.7">
+        <li>Gere/exporte a <b>PNG com alpha</b> em <b>4608×1792</b> (fundo totalmente transparente).</li>
+        <li>No editor, clique <b>Aplicar preset do prompt</b> (8×7, margem 12px).</li>
+        <li>Abra a imagem e use <b>Detectar grade</b> (ou confie no preset matemático).</li>
+        <li>Confira 56 frames alinhados, anime e exporte o ZIP (PNG com alpha).</li>
+      </ol>
+    </section>
+  </main>
+</div>
+
+<nav class="mobile-bottom" id="mobile-nav">
+  <button type="button" class="active" data-screen="cut">✂<br>Recortar</button>
+  <button type="button" data-screen="cut" data-focus="guides">⊞<br>Guias</button>
+  <button type="button" data-screen="animate">▶<br>Animar</button>
+  <button type="button" data-screen="history">◷<br>Histórico</button>
+  <button type="button" data-screen="about">ⓘ<br>Prompt</button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  const app = document.querySelector('#app');
+  const grid = document.querySelector('#frame-grid');
+  const mini = document.querySelector('#mini');
+  const thumbs = document.querySelector('#thumbs');
+  const sheet = document.querySelector('#sheet');
+  const sheetImage = document.querySelector('#sheet-image');
+  const canvasWrap = document.querySelector('#canvas-wrap');
+  const stage = document.querySelector('#stage');
+  const sidePanel = document.querySelector('#side-panel');
+  const fileInput = document.querySelector('#file-input');
+  const batchInput = document.querySelector('#batch-input');
+  const toastEl = document.querySelector('#toast');
+  const historyList = document.querySelector('#history-list');
+
+  const positionInput = document.querySelector('#guide-pos');
+  const gapXInput = document.querySelector('#gap-x');
+  const gapYInput = document.querySelector('#gap-y');
+  const safeMarginInput = document.querySelector('#safe-margin');
+  const frameMarks = document.querySelector('#frame-marks');
+  const thicknessInput = document.querySelector('#guide-thickness');
+  const colorInput = document.querySelector('#guide-color');
+  const colorChip = document.querySelector('#guide-color-chip');
+  const colorLabel = document.querySelector('#guide-color-label');
+  const selType = document.querySelector('#sel-type');
+  const selPos = document.querySelector('#sel-pos');
+  const selPosLabel = document.querySelector('#sel-pos-label');
+  const btnNudgeNeg = document.querySelector('#btn-nudge-neg');
+  const btnNudgePos = document.querySelector('#btn-nudge-pos');
+  const colsCounter = document.querySelector('#cols-counter');
+  const rowsCounter = document.querySelector('#rows-counter');
+  const xTag = document.querySelector('.guide-tag.x');
+  const yTag = document.querySelector('.guide-tag.y');
+  const zoomValue = document.querySelector('#zoom-value');
+  const miniViewport = document.querySelector('#mini-viewport');
+
+  const SCREENS = {
+    cut: { title: 'Recortar Frames', sub: 'Manipule as linhas guias e ajuste cada corte com precisão.' },
+    animate: { title: 'Animar Frames', sub: 'Pré-visualize cada linha como animação com as guias atuais.' },
+    batch: { title: 'Lote', sub: 'Processe várias spritesheets com a mesma grade.' },
+    settings: { title: 'Configurações', sub: 'Preferências da sessão atual.' },
+    history: { title: 'Histórico', sub: 'Ações recentes nesta sessão.' },
+    about: { title: 'Prompt de teste', sub: 'Gere a spritesheet 4608×1792 (8×7) com fundo alpha transparente, sem linhas verdes.' }
+  };
+
+  const ANIM_ROW_NAMES = ['IDLE', 'WALK', 'RUN', 'JUMP', 'ATTACK', 'HURT', 'DEATH'];
+
+  function rowLabelName(r) {
+    if (rows === ANIM_ROW_NAMES.length && ANIM_ROW_NAMES[r]) return ANIM_ROW_NAMES[r];
+    return 'Linha ' + (r + 1);
+  }
+
+  // Preset alinhado ao prompt de teste (grade matemática perfeita)
+  const SHEET_PRESET = {
+    name: 'raposa_spritesheet.png',
+    width: 4608,
+    height: 1792,
+    cols: 8,
+    rows: 7,
+    labelW: 512,
+    cellW: 512,
+    cellH: 256,
+    gutter: 12, // folga mínima em px para não cortar a arte (absoluta ao escalar)
+    gapX: 0,
+    gapY: 0
+  };
+
+  const TEST_PROMPT = `Create a clean 2D game spritesheet, exact size 4608x1792 pixels, PNG with FULLY TRANSPARENT alpha background (alpha = 0 everywhere there is no art or text — no black fill, no checkerboard, no solid color behind sprites), flat 2D cartoon style, crisp edges, no blur, no anti-aliased glow spilling onto empty pixels, no drop shadows on the background, no green lines, no cyan lines, no guide overlays, no UI, no watermark.
+
+LEFT LABEL COLUMN (x=0 to x=512): fully transparent background with white bold uppercase sans-serif text (opaque white glyphs only), centered vertically per row:
+Row1: IDLE (8 FRAMES)
+Row2: WALK (8 FRAMES)
+Row3: RUN (8 FRAMES)
+Row4: JUMP (8 FRAMES)
+Row5: ATTACK (8 FRAMES)
+Row6: HURT (8 FRAMES)
+Row7: DEATH (8 FRAMES)
+
+SPRITE GRID (x=512 to x=4608, full height 0 to 1792): perfect regular grid of 8 columns × 7 rows.
+Each cell is exactly 512×256 pixels.
+Inside every cell, leave at least a 12px fully transparent margin on all sides (safe empty gutter so character art is never clipped), and place the character art centered in the remaining inner area.
+Do NOT draw any green/red/cyan rectangles or borders around frames. Only the character art (and label text) on transparent alpha — empty pixels must be RGBA(0,0,0,0).
+
+Character: cute orange cartoon fox, consistent size and proportions across all frames, side-view/platformer style, solid colors, opaque character pixels (alpha = 255 on the fox).
+
+Animations by row (8 frames each, left to right):
+1) IDLE: subtle standing loop
+2) WALK: walking cycle
+3) RUN: running cycle
+4) JUMP: crouch, leap, hang, land
+5) ATTACK: swipe attack with simple white motion lines
+6) HURT: hit reaction / knockback
+7) DEATH: fall and lie still
+
+Export as PNG-24/32 with alpha channel. Strict alignment: every frame locked to the mathematical grid, identical cell size, no overlapping, no tilted frames, no perspective, production game asset quality.`;
+
+  const TEST_NEGATIVE = `solid black background, #000000 fill, opaque backdrop, white background, colored background, checkerboard, matte backdrop, green border, neon green box, cyan guides, grid overlay lines, ruler, watermark, logo, blur, photo, 3D, uneven spacing, overlapping sprites, random layout, text over sprites, textured background, shadows on background, low contrast, distorted fox, extra characters, UI chrome, JPEG, flattened no-alpha`;
+
+  const DEFAULT = {
+    cols: SHEET_PRESET.cols,
+    rows: SHEET_PRESET.rows,
+    // área dos sprites após a coluna de labels (512/4608 ≈ 11.111%)
+    originX: (SHEET_PRESET.labelW / SHEET_PRESET.width) * 100,
+    originY: 0,
+    endX: 100,
+    endY: 100,
+    thickness: 2,
+    color: '#00E7FF',
+    imageW: SHEET_PRESET.width,
+    imageH: SHEET_PRESET.height,
+    fileName: 'sem_imagem.png',
+    displayW: 900,
+    displayRatio: SHEET_PRESET.width / SHEET_PRESET.height,
+    safeMargin: SHEET_PRESET.gutter
+  };
+
+  let cols = DEFAULT.cols;
+  let rows = DEFAULT.rows;
+  let gapX = 0;
+  let gapY = 0;
+  let safeMarginPx = DEFAULT.safeMargin;
+  let detectedFrames = null; // [{x,y,w,h}] em pixels da imagem, ou null = calcular pelas guias
+  let addAxis = 'v';
+  let activeGuide = null;
+  let dragGuide = null;
+  let dragPointerId = null;
+  let activeTool = 'guides';
+  let zoom = 1;
+  let selectedFrame = 1;
+  let imageW = DEFAULT.imageW;
+  let imageH = DEFAULT.imageH;
+  let fileName = DEFAULT.fileName;
+  let hasImage = false;
+  let snapEnabled = false;
+  let pan = { active: false, pointerId: null, startX: 0, startY: 0, scrollLeft: 0, scrollTop: 0 };
+  let toastTimer = null;
+  const history = [];
+
+  function guideBounds() {
+    return { originX: DEFAULT.originX, originY: DEFAULT.originY, endX: DEFAULT.endX, endY: DEFAULT.endY };
+  }
+
+  function toast(msg, type) {
+    toastEl.textContent = msg;
+    toastEl.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2400);
+  }
+
+  function pushHistory(text) {
+    const stamp = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    history.unshift(stamp + ' — ' + text);
+    if (history.length > 20) history.pop();
+    historyList.innerHTML = history.map(h => '<li>' + h + '</li>').join('') || '<li>Nenhuma ação ainda</li>';
+  }
+
+  function frameCount() { return cols * rows; }
+
+  function updateFileMeta() {
+    document.querySelector('#file-name').textContent = hasImage ? fileName : 'Nenhuma imagem';
+    document.querySelector('#file-meta').textContent = hasImage
+      ? (imageW + ' × ' + imageH + ' px • ' + frameCount() + ' frames (' + cols + ' × ' + rows + ')')
+      : 'Abra uma spritesheet para começar';
+    document.querySelector('#thumbs-title').textContent = 'Frames (' + frameCount() + ')';
+    document.querySelector('#view-frames').textContent = String(frameCount());
+    document.querySelector('#view-grid').textContent = cols + ' × ' + rows;
+  }
+
+  function paintRectPreview(targetCanvas, rect, maxSide) {
+    if (!targetCanvas || !rect) return;
+    const max = maxSide || 84;
+    const scale = Math.min(1, max / Math.max(1, rect.w), max / Math.max(1, rect.h));
+    const dw = Math.max(1, Math.round(rect.w * scale));
+    const dh = Math.max(1, Math.round(rect.h * scale));
+    targetCanvas.width = dw;
+    targetCanvas.height = dh;
+    const ctx = targetCanvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, dw, dh);
+    if (hasImage && sheetImage.src) {
+      ctx.drawImage(sheetImage, rect.x, rect.y, rect.w, rect.h, 0, 0, dw, dh);
+    }
+  }
+
+  let previewPaintTimer = null;
+  function schedulePreviewPaint() {
+    clearTimeout(previewPaintTimer);
+    previewPaintTimer = setTimeout(paintAllFramePreviews, 90);
+  }
+
+  function paintAllFramePreviews() {
+    if (!hasImage || !sheetImage.src) return;
+    let rects = [];
+    try { rects = getFrameRectsPx().rects; } catch (_) { return; }
+    if (!rects.length) return;
+
+    document.querySelectorAll('#thumbs .thumb').forEach(t => {
+      const idx = Number(t.dataset.frame);
+      const rect = rects[idx - 1];
+      const canvas = t.querySelector('canvas');
+      if (canvas && rect) paintRectPreview(canvas, rect, 80);
+    });
+    document.querySelectorAll('#mini i').forEach(m => {
+      const idx = Number(m.dataset.frame);
+      const rect = rects[idx - 1];
+      let canvas = m.querySelector('canvas');
+      if (!canvas) {
+        canvas = document.createElement('canvas');
+        m.appendChild(canvas);
+      }
+      if (rect) paintRectPreview(canvas, rect, 48);
+    });
+  }
+
+  function rebuildRowLabels() {
+    const host = document.querySelector('#row-labels');
+    if (!host) return;
+    host.innerHTML = '';
+    if (hasImage) return; // labels da arte vêm na spritesheet
+    const ys = getGuidePositions('h');
+    if (ys.length < 2) return;
+    for (let r = 0; r < ys.length - 1; r++) {
+      const mid = (ys[r] + ys[r + 1]) / 2;
+      const el = document.createElement('div');
+      el.className = 'label';
+      el.style.top = mid + '%';
+      el.innerHTML = rowLabelName(r) + '<br>(' + cols + ' FRAMES)';
+      host.appendChild(el);
+    }
+  }
+
+  function makeMiniCell(frameIndex) {
+    const m = document.createElement('i');
+    m.dataset.frame = String(frameIndex);
+    if (frameIndex === selectedFrame) m.classList.add('active');
+    m.title = 'Frame ' + frameIndex;
+    m.addEventListener('click', e => {
+      e.stopPropagation();
+      selectFrame(frameIndex);
+    });
+    return m;
+  }
+
+  function makeEmptyCell(frameIndex) {
+    const c = document.createElement('div');
+    c.className = 'cell' + (frameIndex === selectedFrame ? ' active' : '');
+    c.dataset.frame = String(frameIndex);
+    c.innerHTML = '<span class="cell-num">' + frameIndex + '</span>';
+    c.addEventListener('click', () => selectFrame(frameIndex));
+    return c;
+  }
+
+  function rebuildCells() {
+    const total = frameCount();
+    grid.style.gap = hasImage ? '0px' : '3px';
+    mini.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+    mini.style.gridTemplateRows = 'repeat(' + rows + ',1fr)';
+    grid.innerHTML = '';
+    mini.innerHTML = '';
+    if (selectedFrame > total) selectedFrame = 1;
+    for (let i = 0; i < total; i++) {
+      grid.appendChild(makeEmptyCell(i + 1));
+      mini.appendChild(makeMiniCell(i + 1));
+    }
+    rebuildThumbs();
+    updateFileMeta();
+    syncGridFromGuides();
+    schedulePreviewPaint();
+  }
+
+  function syncGridFromGuides() {
+    const xs = [...sheet.querySelectorAll('.guide.v')].map(guidePercent).sort((a, b) => a - b);
+    const ys = [...sheet.querySelectorAll('.guide.h')].map(guidePercent).sort((a, b) => a - b);
+    if (xs.length < 2 || ys.length < 2) return;
+
+    const x0 = xs[0];
+    const x1 = xs[xs.length - 1];
+    const y0 = ys[0];
+    const y1 = ys[ys.length - 1];
+    grid.style.left = x0 + '%';
+    grid.style.top = y0 + '%';
+    grid.style.right = (100 - x1) + '%';
+    grid.style.bottom = (100 - y1) + '%';
+    grid.style.gap = hasImage ? '0px' : '3px';
+    grid.style.gridTemplateColumns = xs.slice(0, -1).map((_, i) => Math.max(0.0001, xs[i + 1] - xs[i]) + 'fr').join(' ');
+    grid.style.gridTemplateRows = ys.slice(0, -1).map((_, i) => Math.max(0.0001, ys[i + 1] - ys[i]) + 'fr').join(' ');
+
+    const nextCols = xs.length - 1;
+    const nextRows = ys.length - 1;
+    if (nextCols !== cols || nextRows !== rows || grid.children.length !== nextCols * nextRows) {
+      cols = Math.max(1, nextCols);
+      rows = Math.max(1, nextRows);
+      syncCounters();
+      const total = frameCount();
+      mini.style.gridTemplateColumns = 'repeat(' + cols + ',1fr)';
+      mini.style.gridTemplateRows = 'repeat(' + rows + ',1fr)';
+      grid.innerHTML = '';
+      mini.innerHTML = '';
+      if (selectedFrame > total) selectedFrame = 1;
+      for (let i = 0; i < total; i++) {
+        grid.appendChild(makeEmptyCell(i + 1));
+        mini.appendChild(makeMiniCell(i + 1));
+      }
+      rebuildThumbs();
+      updateFileMeta();
+    }
+    renderSafeFrames();
+    rebuildRowLabels();
+    schedulePreviewPaint();
+  }
+
+  function rebuildThumbs() {
+    thumbs.innerHTML = '';
+    const total = frameCount();
+    for (let i = 1; i <= total; i++) {
+      const t = document.createElement('div');
+      t.className = 'thumb' + (i === selectedFrame ? ' active' : '') + (hasImage ? '' : ' empty');
+      t.dataset.frame = String(i);
+      t.innerHTML = '<b>' + i + '</b><canvas width="64" height="64" aria-hidden="true"></canvas>';
+      t.addEventListener('click', () => selectFrame(i));
+      thumbs.appendChild(t);
+    }
+    schedulePreviewPaint();
+  }
+
+  function selectFrame(n) {
+    selectedFrame = n;
+    document.querySelectorAll('.cell').forEach(c => c.classList.toggle('active', Number(c.dataset.frame) === n));
+    document.querySelectorAll('.thumb').forEach(t => {
+      const on = Number(t.dataset.frame) === n;
+      t.classList.toggle('active', on);
+      if (on) t.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+    });
+    document.querySelectorAll('#mini i').forEach(m => m.classList.toggle('active', Number(m.dataset.frame) === n));
+    document.querySelectorAll('#frame-marks .frame-mark').forEach(m => m.classList.toggle('active', Number(m.dataset.frame) === n));
+    document.querySelector('#thumbs-status').textContent = 'Frame ' + n + ' selecionado';
+    document.querySelector('#view-selected').textContent = 'Frame ' + n;
+  }
+
+  function getGuidePositions(axisClass) {
+    return [...sheet.querySelectorAll('.guide.' + axisClass)]
+      .map(guidePercent)
+      .sort((a, b) => a - b);
+  }
+
+  function computeFramesFromGuides() {
+    const xs = getGuidePositions('v');
+    const ys = getGuidePositions('h');
+    if (xs.length < 2 || ys.length < 2) return [];
+    // Corte = célula INTEIRA entre guias (não encolhe — evita cortar a arte)
+    const frames = [];
+    for (let r = 0; r < ys.length - 1; r++) {
+      for (let c = 0; c < xs.length - 1; c++) {
+        const left = xs[c];
+        const top = ys[r];
+        const width = xs[c + 1] - xs[c];
+        const height = ys[r + 1] - ys[r];
+        if (width <= 0.15 || height <= 0.15) continue;
+        frames.push({ left, top, width, height });
+      }
+    }
+    return frames;
+  }
+
+  function renderSafeFrames() {
+    if (!frameMarks) return;
+    const frames = computeFramesFromGuides();
+    frameMarks.innerHTML = '';
+    frames.forEach((f, i) => {
+      const el = document.createElement('div');
+      el.className = 'frame-mark' + (i + 1 === selectedFrame ? ' active' : '');
+      el.dataset.frame = String(i + 1);
+      el.style.left = f.left + '%';
+      el.style.top = f.top + '%';
+      el.style.width = f.width + '%';
+      el.style.height = f.height + '%';
+      el.title = 'Frame ' + (i + 1) + ' · célula completa (folga mín. ' + safeMarginPx + 'px)';
+      frameMarks.appendChild(el);
+    });
+  }
+
+  function isArtPixel(data, w, x, y) {
+    if (x < 0 || y < 0 || x >= w) return false;
+    const i = (y * w + x) * 4;
+    if (i < 0 || i + 3 >= data.length) return false;
+    const a = data[i + 3];
+    if (a < 28) return false; // fundo transparente
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    const isGuideGreen = g > 150 && g > r + 40 && g > b + 40;
+    const isGuideCyan = b > 150 && g > 120 && r < 80;
+    // arte opaca: alpha alto; folhas pretas antigas ainda passam por lum
+    return (a > 200 || lum > 26) && !isGuideGreen && !isGuideCyan;
+  }
+
+  function bandHasArt(data, w, h, x0, x1, y0, y1) {
+    const xa = Math.max(0, Math.min(x0, x1));
+    const xb = Math.min(w, Math.max(x0, x1));
+    const ya = Math.max(0, Math.min(y0, y1));
+    const yb = Math.min(h, Math.max(y0, y1));
+    if (xb - xa < 1 || yb - ya < 1) return false;
+    const step = Math.max(1, Math.floor(Math.min(xb - xa, yb - ya) / 40));
+    for (let y = ya; y < yb; y += step) {
+      for (let x = xa; x < xb; x += step) {
+        if (isArtPixel(data, w, x, y)) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Afasta as guias da arte para garantir folga mínima (não cortar orelhas/cauda/etc).
+   */
+  function protectCutsFromContent(data, w, h, xCuts, yCuts, minPad) {
+    const xs = xCuts.map(v => Math.round(v));
+    const ys = yCuts.map(v => Math.round(v));
+    const pad = Math.max(4, minPad | 0);
+
+    for (let i = 1; i < xs.length - 1; i++) {
+      let x = xs[i];
+      const maxShift = Math.max(4, Math.floor((xs[i + 1] - xs[i - 1]) * 0.22));
+      for (let s = 0; s < maxShift; s++) {
+        const leftHit = bandHasArt(data, w, h, x - pad, x, 0, h);
+        const rightHit = bandHasArt(data, w, h, x, x + pad, 0, h);
+        if (!leftHit && !rightHit) break;
+        if (leftHit && !rightHit) x += 1;
+        else if (rightHit && !leftHit) x -= 1;
+        else break;
+      }
+      xs[i] = Math.max(xs[i - 1] + 2, Math.min(xs[i + 1] - 2, x));
+    }
+
+    for (let i = 1; i < ys.length - 1; i++) {
+      let y = ys[i];
+      const maxShift = Math.max(4, Math.floor((ys[i + 1] - ys[i - 1]) * 0.22));
+      for (let s = 0; s < maxShift; s++) {
+        const topHit = bandHasArt(data, w, h, 0, w, y - pad, y);
+        const botHit = bandHasArt(data, w, h, 0, w, y, y + pad);
+        if (!topHit && !botHit) break;
+        if (topHit && !botHit) y += 1;
+        else if (botHit && !topHit) y -= 1;
+        else break;
+      }
+      ys[i] = Math.max(ys[i - 1] + 2, Math.min(ys[i + 1] - 2, y));
+    }
+
+    // Bordas externas: empurra para fora se a arte encostar
+    if (xs.length >= 2) {
+      let x0 = xs[0];
+      for (let s = 0; s < pad * 2; s++) {
+        if (!bandHasArt(data, w, h, x0, x0 + pad, 0, h)) break;
+        x0 = Math.max(0, x0 - 1);
+      }
+      xs[0] = x0;
+      let x1 = xs[xs.length - 1];
+      for (let s = 0; s < pad * 2; s++) {
+        if (!bandHasArt(data, w, h, x1 - pad, x1, 0, h)) break;
+        x1 = Math.min(w, x1 + 1);
+      }
+      xs[xs.length - 1] = x1;
+    }
+    if (ys.length >= 2) {
+      let y0 = ys[0];
+      for (let s = 0; s < pad * 2; s++) {
+        if (!bandHasArt(data, w, h, 0, w, y0, y0 + pad)) break;
+        y0 = Math.max(0, y0 - 1);
+      }
+      ys[0] = y0;
+      let y1 = ys[ys.length - 1];
+      for (let s = 0; s < pad * 2; s++) {
+        if (!bandHasArt(data, w, h, 0, w, y1 - pad, y1)) break;
+        y1 = Math.min(h, y1 + 1);
+      }
+      ys[ys.length - 1] = y1;
+    }
+
+    return { xCuts: xs, yCuts: ys };
+  }
+
+  function minContentPadForImage(w, h) {
+    // Folga absoluta mínima (não deixa escalar para 2–3px em imagens menores)
+    return Math.max(10, Math.round(Math.min(w, h) * 0.012));
+  }
+
+  function smooth1D(activity, win) {
+    const n = activity.length;
+    const out = new Float32Array(n);
+    const r = win || 2;
+    for (let i = 0; i < n; i++) {
+      let s = 0, c = 0;
+      for (let k = -r; k <= r; k++) {
+        const j = i + k;
+        if (j >= 0 && j < n) { s += activity[j]; c++; }
+      }
+      out[i] = s / c;
+    }
+    return out;
+  }
+
+  function findContentBounds(activity) {
+    let maxA = 0;
+    for (let i = 0; i < activity.length; i++) maxA = Math.max(maxA, activity[i]);
+    const thr = maxA * 0.06;
+    let start = 0, end = activity.length - 1;
+    while (start < activity.length && activity[start] < thr) start++;
+    while (end > start && activity[end] < thr) end--;
+    return { start, end, maxA, thr };
+  }
+
+  /** Primeiro vale largo após o início = fim da coluna de labels */
+  function findLabelGutter(activity, from, to) {
+    const slice = activity.slice(from, to);
+    const smooth = smooth1D(slice, 4);
+    let maxA = 0;
+    for (let i = 0; i < smooth.length; i++) maxA = Math.max(maxA, smooth[i]);
+    const thr = maxA * 0.2;
+    const minW = Math.max(6, Math.floor((to - from) * 0.02));
+    let i = Math.floor(slice.length * 0.08);
+    while (i < smooth.length) {
+      if (smooth[i] <= thr) {
+        const start = i;
+        while (i < smooth.length && smooth[i] <= thr) i++;
+        const end = i - 1;
+        if (end - start + 1 >= minW) {
+          let mid = start, best = smooth[start];
+          for (let x = start; x <= end; x++) {
+            if (smooth[x] <= best) { best = smooth[x]; mid = x; }
+          }
+          return from + mid;
+        }
+      } else i++;
+    }
+    return from;
+  }
+
+  function buildUniformCuts(start, end, count) {
+    const cuts = [];
+    for (let i = 0; i <= count; i++) {
+      cuts.push(Math.round(start + (i / count) * (end - start)));
+    }
+    return cuts;
+  }
+
+  /** Ajusta cortes internos ao mínimo local da projeção (gutters) */
+  function snapCutsToProjection(cuts, activity) {
+    if (cuts.length < 3) return cuts.slice();
+    const cell = Math.max(8, Math.round((cuts[cuts.length - 1] - cuts[0]) / (cuts.length - 1)));
+    const radius = Math.max(4, Math.floor(cell * 0.28));
+    return cuts.map((cut, idx) => {
+      if (idx === 0 || idx === cuts.length - 1) return cut;
+      let best = cut;
+      let bestVal = activity[Math.min(activity.length - 1, Math.max(0, cut))] ?? 1e9;
+      const a = Math.max(0, cut - radius);
+      const b = Math.min(activity.length - 1, cut + radius);
+      for (let x = a; x <= b; x++) {
+        if (activity[x] < bestVal) {
+          bestVal = activity[x];
+          best = x;
+        }
+      }
+      return best;
+    });
+  }
+
+  function estimateSafeMargin(data, w, h, xCuts, yCuts) {
+    const samples = [];
+    const rowsN = yCuts.length - 1;
+    const colsN = xCuts.length - 1;
+    const stepY = Math.max(1, Math.floor(rowsN > 0 ? 1 : 1));
+    for (let r = 0; r < rowsN; r += stepY) {
+      for (let c = 0; c < colsN; c++) {
+        const x0 = xCuts[c], x1 = xCuts[c + 1];
+        const y0 = yCuts[r], y1 = yCuts[r + 1];
+        const cw = x1 - x0, ch = y1 - y0;
+        if (cw < 8 || ch < 8) continue;
+        const cx = Math.floor((x0 + x1) / 2);
+        const cy = Math.floor((y0 + y1) / 2);
+        const maxD = Math.floor(Math.min(cw, ch) * 0.35);
+        const probe = (x, y) => {
+          const i = (y * w + x) * 4;
+          const rr = data[i], g = data[i + 1], b = data[i + 2];
+          const lum = 0.299 * rr + 0.587 * g + 0.114 * b;
+          const isGreen = g > 150 && g > rr + 40 && g > b + 40;
+          return lum > 28 && !isGreen;
+        };
+        let left = 0, top = 0, right = 0, bottom = 0;
+        for (let d = 1; d < maxD; d++) {
+          if (probe(x0 + d, cy)) { left = d; break; }
+        }
+        for (let d = 1; d < maxD; d++) {
+          if (probe(cx, y0 + d)) { top = d; break; }
+        }
+        for (let d = 1; d < maxD; d++) {
+          if (probe(x1 - d, cy)) { right = d; break; }
+        }
+        for (let d = 1; d < maxD; d++) {
+          if (probe(cx, y1 - d)) { bottom = d; break; }
+        }
+        const m = Math.min(
+          left || maxD, top || maxD, right || maxD, bottom || maxD
+        );
+        if (m > 0 && m < maxD) samples.push(m);
+      }
+    }
+    if (!samples.length) {
+      return Math.max(4, Math.round(Math.min(w / colsN, h / rowsN) * 0.07));
+    }
+    samples.sort((a, b) => a - b);
+    return Math.max(2, samples[Math.floor(samples.length * 0.4)]);
+  }
+
+  function applyGuideCuts(xCuts, yCuts, w, h) {
+    detectedFrames = null;
+    cols = Math.max(1, xCuts.length - 1);
+    rows = Math.max(1, yCuts.length - 1);
+    syncCounters();
+    clearGuides();
+    xCuts.forEach(px => createGuide('v', (px / w) * 100, false, { silent: true }));
+    yCuts.forEach(px => createGuide('h', (px / h) * 100, false, { silent: true }));
+    selectGuide(sheet.querySelector('.guide.v') || sheet.querySelector('.guide'));
+    syncGridFromGuides();
+    if (grid.children.length !== frameCount()) rebuildCells();
+    else { rebuildThumbs(); updateFileMeta(); }
+    renderSafeFrames();
+    rebuildRowLabels();
+    schedulePreviewPaint();
+    updateFileMeta();
+  }
+
+  /** Grade matemática exata do prompt de teste (4608×1792, labels 512, célula 512×256, margem 8) */
+  function buildPresetCuts(w, h, labelW, cellW, cellH, nCols, nRows) {
+    const x0 = labelW;
+    const xCuts = [];
+    const yCuts = [];
+    for (let i = 0; i <= nCols; i++) xCuts.push(Math.round(x0 + i * cellW));
+    for (let i = 0; i <= nRows; i++) yCuts.push(Math.round(i * cellH));
+    // garante que a última guia bata na borda da imagem quando as medidas batem
+    if (Math.abs(xCuts[xCuts.length - 1] - w) <= 2) xCuts[xCuts.length - 1] = w;
+    if (Math.abs(yCuts[yCuts.length - 1] - h) <= 2) yCuts[yCuts.length - 1] = h;
+    return { xCuts, yCuts };
+  }
+
+  function applyPromptPreset(opts) {
+    const p = SHEET_PRESET;
+    cols = p.cols;
+    rows = p.rows;
+    gapX = p.gapX;
+    gapY = p.gapY;
+    safeMarginPx = p.gutter;
+    imageW = hasImage ? imageW : p.width;
+    imageH = hasImage ? imageH : p.height;
+    if (!hasImage) {
+      imageW = p.width;
+      imageH = p.height;
+      fileName = p.name;
+    }
+    gapXInput.value = gapX + ' px';
+    gapYInput.value = gapY + ' px';
+    safeMarginInput.value = safeMarginPx + ' px';
+    syncCounters();
+
+    // Usa dimensões reais da imagem se já carregada; senão o canvas do preset
+    const w = hasImage ? imageW : p.width;
+    const h = hasImage ? imageH : p.height;
+
+    // Escala o preset se a imagem tiver o mesmo layout com outro tamanho
+    const scaleX = w / p.width;
+    const scaleY = h / p.height;
+    const sameLayout = Math.abs(scaleX - scaleY) < 0.02 || (w === p.width && h === p.height);
+    let xCuts, yCuts;
+    if (sameLayout || (!hasImage)) {
+      const sx = hasImage ? scaleX : 1;
+      const sy = hasImage ? scaleY : 1;
+      const built = buildPresetCuts(
+        w, h,
+        Math.round(p.labelW * sx),
+        Math.round(p.cellW * sx),
+        Math.round(p.cellH * sy),
+        p.cols, p.rows
+      );
+      xCuts = built.xCuts;
+      yCuts = built.yCuts;
+      // Nunca deixar a folga virar 2–3px em imagens menores
+      safeMarginPx = Math.max(minContentPadForImage(w, h), Math.round(p.gutter * Math.min(sx, sy)));
+      safeMarginInput.value = safeMarginPx + ' px';
+    } else {
+      const x0 = Math.round(w * (p.labelW / p.width));
+      xCuts = buildUniformCuts(x0, w, p.cols);
+      yCuts = buildUniformCuts(0, h, p.rows);
+      safeMarginPx = minContentPadForImage(w, h);
+      safeMarginInput.value = safeMarginPx + ' px';
+    }
+
+    applyGuideCuts(xCuts, yCuts, w, h);
+    updateFileMeta();
+    if (!opts || opts.toast !== false) {
+      toast('Preset aplicado: ' + cols + '×' + rows + ' · margem ' + safeMarginPx + 'px', 'ok');
+    }
+    pushHistory('Preset do prompt aplicado (' + w + '×' + h + ')');
+    setTab('guides');
+    setScreen('cut');
+  }
+
+  function copyText(text, label) {
+    const done = () => toast((label || 'Texto') + ' copiado', 'ok');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else fallbackCopy(text, done);
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); }
+    catch (_) { toast('Não foi possível copiar', 'warn'); }
+    ta.remove();
+  }
+
+  /**
+   * Detecção segura:
+   * 1) Se a imagem bate no preset do prompt → grade matemática exata
+   * 2) Senão: usa Colunas/Linhas, localiza sprites e alinha guias
+   */
+  function detectGridFromImage(sourceImg) {
+    const src = sourceImg || sheetImage;
+    if (!src || !(src.naturalWidth || src.width)) {
+      toast('Abra uma spritesheet primeiro.', 'warn');
+      return;
+    }
+
+    const w = src.naturalWidth || imageW;
+    const h = src.naturalHeight || imageH;
+    imageW = w;
+    imageH = h;
+    hasImage = true;
+
+    const p = SHEET_PRESET;
+    const ratioOk = Math.abs((w / h) - (p.width / p.height)) < 0.03;
+    const exact = w === p.width && h === p.height;
+    const scaled = ratioOk && Math.abs((w / p.width) - (h / p.height)) < 0.02;
+
+    // Imagem gerada pelo prompt (ou escala proporcional) → grade matemática + proteção da arte
+    if (exact || scaled) {
+      cols = p.cols;
+      rows = p.rows;
+      syncCounters();
+      applyPromptPreset({ toast: false });
+
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(src, 0, 0);
+        const data = ctx.getImageData(0, 0, w, h).data;
+        let xCuts = getGuidePositions('v').map(pct => Math.round((pct / 100) * w));
+        let yCuts = getGuidePositions('h').map(pct => Math.round((pct / 100) * h));
+        const pad = Math.max(safeMarginPx, minContentPadForImage(w, h));
+        safeMarginPx = pad;
+        safeMarginInput.value = pad + ' px';
+        const protectedCuts = protectCutsFromContent(data, w, h, xCuts, yCuts, pad);
+        applyGuideCuts(protectedCuts.xCuts, protectedCuts.yCuts, w, h);
+        if (applyLearningBlend()) return;
+        toast('Grade protegida: nada da arte é cortado (folga ' + pad + 'px)', 'ok');
+      } catch (_) {
+        if (!applyLearningBlend()) toast('Grade do prompt aplicada (' + w + '×' + h + ')', 'ok');
+      }
+      return;
+    }
+
+    const targetCols = Math.max(1, cols);
+    const targetRows = Math.max(1, rows);
+    toast('Detectando grade ' + targetCols + '×' + targetRows + '…');
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(src, 0, 0);
+    let data;
+    try {
+      data = ctx.getImageData(0, 0, w, h).data;
+    } catch (err) {
+      toast('Não foi possível ler a imagem (CORS).', 'warn');
+      return;
+    }
+
+    const step = Math.max(1, Math.floor(Math.min(w, h) / 1000));
+    const colAct = new Float32Array(w);
+    const rowAct = new Float32Array(h);
+
+    for (let y = 0; y < h; y += step) {
+      for (let x = 0; x < w; x += step) {
+        const i = (y * w + x) * 4;
+        const a = data[i + 3];
+        if (a < 28) continue; // ignora alpha transparente
+        const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        // ignora verde de marcação já existente na arte
+        const isGreen = data[i + 1] > 150 && data[i + 1] > data[i] + 40 && data[i + 1] > data[i + 2] + 40;
+        if ((a > 200 || lum > 24) && !isGreen) {
+          colAct[x] += 1;
+          rowAct[y] += 1;
+        }
+      }
+    }
+    // interpola buracos do sampling
+    for (let x = 1; x < w; x++) if (!colAct[x]) colAct[x] = colAct[x - 1];
+    for (let y = 1; y < h; y++) if (!rowAct[y]) rowAct[y] = rowAct[y - 1];
+
+    const xSmooth = smooth1D(colAct, 3);
+    const ySmooth = smooth1D(rowAct, 3);
+    const xb = findContentBounds(xSmooth);
+    const yb = findContentBounds(ySmooth);
+
+    let gridLeft = findLabelGutter(xSmooth, xb.start, Math.min(w - 1, xb.start + Math.floor(w * 0.32)));
+    if (gridLeft <= xb.start + 4) gridLeft = xb.start;
+    // pequeno empurrão para fora do gutter
+    gridLeft = Math.min(w - 2, gridLeft + Math.max(2, Math.floor(w * 0.002)));
+
+    const gridRight = xb.end;
+    const gridTop = yb.start;
+    const gridBottom = yb.end;
+
+    if (gridRight - gridLeft < targetCols * 8 || gridBottom - gridTop < targetRows * 8) {
+      toast('Área de sprites insuficiente para ' + targetCols + '×' + targetRows + '.', 'warn');
+      return;
+    }
+
+    let xCuts = buildUniformCuts(gridLeft, gridRight, targetCols);
+    let yCuts = buildUniformCuts(gridTop, gridBottom, targetRows);
+    xCuts = snapCutsToProjection(xCuts, xSmooth);
+    yCuts = snapCutsToProjection(yCuts, ySmooth);
+    // reordena e remove duplicatas
+    xCuts = [...new Set(xCuts)].sort((a, b) => a - b);
+    yCuts = [...new Set(yCuts)].sort((a, b) => a - b);
+
+    // Se o snap colapsou cortes, volta ao uniforme
+    if (xCuts.length !== targetCols + 1) xCuts = buildUniformCuts(gridLeft, gridRight, targetCols);
+    if (yCuts.length !== targetRows + 1) yCuts = buildUniformCuts(gridTop, gridBottom, targetRows);
+
+    cols = targetCols;
+    rows = targetRows;
+    const pad = Math.max(safeMarginPx, minContentPadForImage(w, h));
+    const protectedCuts = protectCutsFromContent(data, w, h, xCuts, yCuts, pad);
+    xCuts = protectedCuts.xCuts;
+    yCuts = protectedCuts.yCuts;
+    safeMarginPx = pad;
+    safeMarginInput.value = safeMarginPx + ' px';
+
+    applyGuideCuts(xCuts, yCuts, w, h);
+    if (applyLearningBlend()) {
+      setTab('guides');
+      return;
+    }
+
+    pushHistory('Grade segura ' + cols + '×' + rows + ' · folga ' + safeMarginPx + 'px');
+    toast('Grade ' + cols + '×' + rows + ' sem cortar a arte · folga ' + safeMarginPx + 'px', 'ok');
+    setTab('guides');
+  }
+
+  function setZoom(next) {
+    zoom = Math.max(0.25, Math.min(4, Math.round(next * 1000) / 1000));
+    const ratio = imageW / Math.max(1, imageH);
+    sheet.style.aspectRatio = imageW + ' / ' + imageH;
+    sheet.style.width = Math.max(220, DEFAULT.displayW * zoom) + 'px';
+    sheet.style.maxWidth = 'none';
+    sheet.style.transform = '';
+    zoomValue.textContent = Math.round(zoom * 100) + '%';
+    updateMiniViewport();
+    if (activeGuide) updateGuideReadout(activeGuide);
+  }
+
+  function updateMiniViewport() {
+    const sw = Math.max(1, stage.clientWidth);
+    const sh = Math.max(1, stage.clientHeight);
+    const sheetW = Math.max(1, DEFAULT.displayW * zoom);
+    const sheetH = Math.max(1, sheetW * (imageH / Math.max(1, imageW)));
+    const vw = Math.min(100, (sw / sheetW) * 100);
+    const vh = Math.min(100, (sh / sheetH) * 100);
+    miniViewport.style.width = Math.max(8, vw) + '%';
+    miniViewport.style.height = Math.max(8, vh) + '%';
+    const maxScrollX = Math.max(1, stage.scrollWidth - stage.clientWidth);
+    const maxScrollY = Math.max(1, stage.scrollHeight - stage.clientHeight);
+    miniViewport.style.left = ((stage.scrollLeft / maxScrollX) * (100 - vw)) + '%';
+    miniViewport.style.top = ((stage.scrollTop / maxScrollY) * (100 - vh)) + '%';
+  }
+
+  function fitToView() {
+    const pad = 48;
+    const sw = Math.max(120, stage.clientWidth - pad);
+    const sh = Math.max(120, stage.clientHeight - pad);
+    const sheetH100 = DEFAULT.displayW * (imageH / Math.max(1, imageW));
+    const z = Math.min(sw / DEFAULT.displayW, sh / sheetH100);
+    setZoom(z);
+    stage.scrollLeft = 0;
+    stage.scrollTop = 0;
+    updateMiniViewport();
+  }
+
+  function zoomActualPixels() {
+    setZoom(1);
+    toast('Zoom 100% (tamanho padrão dos blocos)');
+  }
+
+  function setTool(tool) {
+    activeTool = tool;
+    document.querySelector('#tool-pan').classList.toggle('active', tool === 'pan');
+    document.querySelector('#tool-guides').classList.toggle('active', tool === 'guides');
+    canvasWrap.classList.toggle('tool-pan', tool === 'pan');
+    canvasWrap.classList.toggle('tool-guides', tool === 'guides');
+  }
+
+  function setTab(tab) {
+    document.querySelectorAll('#main-tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    sidePanel.dataset.mode = tab;
+    canvasWrap.classList.toggle('guides-hidden', tab === 'view');
+    if (tab === 'guides') setTool('guides');
+    const labels = { view: 'Visualizar', guides: 'Guias', adjust: 'Ajustes' };
+    const hint = document.querySelector('#chrome-hint');
+    if (hint) hint.textContent = labels[tab] || tab;
+  }
+
+  // Barra compacta colapsável (arquivo + abas)
+  const chromeBar = document.querySelector('#chrome-bar');
+  const chromeToggle = document.querySelector('#btn-chrome-toggle');
+  if (chromeToggle && chromeBar) {
+    const saved = sessionStorage.getItem('spritecut-chrome-collapsed') === '1';
+    if (saved) {
+      chromeBar.classList.add('collapsed');
+      chromeToggle.setAttribute('aria-expanded', 'false');
+    }
+    chromeToggle.addEventListener('click', () => {
+      const collapsed = chromeBar.classList.toggle('collapsed');
+      chromeToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      sessionStorage.setItem('spritecut-chrome-collapsed', collapsed ? '1' : '0');
+      requestAnimationFrame(updateMiniViewport);
+    });
+  }
+
+  function setScreen(screen, focus) {
+    if (app.dataset.screen === 'animate' && screen !== 'animate') stopAnimPlayback(true);
+    app.dataset.screen = screen;
+    const info = SCREENS[screen] || SCREENS.cut;
+    document.querySelector('#page-title').textContent = info.title;
+    document.querySelector('#page-sub').textContent = info.sub;
+
+    const markActive = (root) => {
+      root.querySelectorAll('button').forEach(b => {
+        let on = false;
+        if (screen === 'cut') {
+          const wantGuides = focus === 'guides';
+          on = b.dataset.screen === 'cut' && (wantGuides ? b.dataset.focus === 'guides' : !b.dataset.focus);
+        } else {
+          on = b.dataset.screen === screen;
+        }
+        b.classList.toggle('active', on);
+      });
+    };
+    markActive(document.querySelector('#side-nav'));
+    markActive(document.querySelector('#mobile-nav'));
+
+    if (screen === 'cut' && focus === 'guides') setTab('guides');
+    if (screen === 'animate') refreshAnimator(true);
+  }
+
+  function axisOf(guide) { return guide.classList.contains('v') ? 'x' : 'y'; }
+
+  function imageSize(axis) {
+    return axis === 'x' ? imageW : imageH;
+  }
+
+  function sheetSize(axis) {
+    // tamanho visual atual no canvas (para hit-test de ponteiro)
+    const rect = sheet.getBoundingClientRect();
+    return axis === 'x' ? rect.width : rect.height;
+  }
+
+  function guidePercent(guide) {
+    return parseFloat(axisOf(guide) === 'x' ? guide.style.left : guide.style.top) || 0;
+  }
+
+  function guidePx(guide) {
+    // posição em pixels da imagem original
+    return Math.round((guidePercent(guide) / 100) * imageSize(axisOf(guide)));
+  }
+
+  function pointerPercent(guide, clientX, clientY) {
+    const rect = sheet.getBoundingClientRect();
+    let pct = axisOf(guide) === 'x'
+      ? ((clientX - rect.left) / rect.width) * 100
+      : ((clientY - rect.top) / rect.height) * 100;
+    if (snapEnabled) {
+      const bounds = guideBounds();
+      const count = axisOf(guide) === 'x' ? cols : rows;
+      const start = axisOf(guide) === 'x' ? bounds.originX : bounds.originY;
+      const end = axisOf(guide) === 'x' ? bounds.endX : bounds.endY;
+      const step = (end - start) / count;
+      pct = start + Math.round((pct - start) / step) * step;
+    }
+    return pct;
+  }
+
+  function parsePx(value) {
+    const n = parseFloat(String(value).replace(',', '.'));
+    return Number.isFinite(n) ? n : NaN;
+  }
+
+  function setGuidePercent(guide, pct) {
+    pct = Math.max(0, Math.min(100, pct));
+    if (axisOf(guide) === 'x') guide.style.left = pct + '%';
+    else guide.style.top = pct + '%';
+    if (guide === activeGuide) updateGuideReadout(guide);
+    detectedFrames = null;
+    syncGridFromGuides();
+  }
+
+  function updateGuideReadout(guide) {
+    if (!guide) {
+      selType.textContent = '—';
+      selPos.textContent = '—';
+      return;
+    }
+    const isX = axisOf(guide) === 'x';
+    const px = guidePx(guide);
+    const pct = guidePercent(guide);
+    positionInput.value = px + ' px';
+    selType.textContent = isX ? 'Vertical' : 'Horizontal';
+    selPosLabel.textContent = isX ? 'Posição X' : 'Posição Y';
+    selPos.textContent = px + ' px';
+    btnNudgeNeg.textContent = isX ? '← 1 px' : '↑ 1 px';
+    btnNudgePos.textContent = isX ? '1 px →' : '1 px ↓';
+    if (isX) {
+      xTag.textContent = 'X: ' + px + ' px';
+      xTag.style.left = Math.max(2, Math.min(88, pct)) + '%';
+    } else {
+      yTag.textContent = 'Y: ' + px + ' px';
+      yTag.style.top = Math.max(2, Math.min(92, pct)) + '%';
+    }
+  }
+
+  function selectGuide(guide) {
+    document.querySelectorAll('.guide').forEach(g => g.classList.remove('selected', 'drag-unlocked'));
+    if (!guide) { activeGuide = null; updateGuideReadout(null); return; }
+    guide.classList.add('selected');
+    activeGuide = guide;
+    addAxis = guide.classList.contains('v') ? 'v' : 'h';
+    syncAxisSeg();
+    updateGuideReadout(guide);
+  }
+
+  function bindGuide(guide) {
+    guide.addEventListener('pointerdown', onGuidePointerDown);
+    guide.addEventListener('pointermove', onGuidePointerMove);
+    guide.addEventListener('pointerup', onGuidePointerUp);
+    guide.addEventListener('pointercancel', onGuidePointerUp);
+    guide.addEventListener('contextmenu', e => e.preventDefault());
+  }
+
+  function onGuidePointerDown(e) {
+    if (activeTool !== 'guides') return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const guide = e.currentTarget;
+    e.preventDefault();
+    e.stopPropagation();
+    selectGuide(guide);
+    dragGuide = guide;
+    dragPointerId = e.pointerId;
+    guide.classList.add('drag-unlocked');
+    guide.style.cursor = 'grabbing';
+    document.body.style.userSelect = 'none';
+    try { guide.setPointerCapture(e.pointerId); } catch (_) {}
+  }
+
+  function onGuidePointerMove(e) {
+    if (dragGuide !== e.currentTarget || dragPointerId !== e.pointerId) return;
+    e.preventDefault();
+    setGuidePercent(dragGuide, pointerPercent(dragGuide, e.clientX, e.clientY));
+  }
+
+  function onGuidePointerUp(e) {
+    if (dragPointerId !== e.pointerId) return;
+    const guide = dragGuide;
+    dragGuide = null;
+    dragPointerId = null;
+    if (guide) {
+      guide.classList.remove('drag-unlocked');
+      guide.style.cursor = 'grab';
+    }
+    document.body.style.userSelect = '';
+    scheduleLearn('arraste');
+  }
+
+  function createGuide(axis, pct, select, opts) {
+    const guide = document.createElement('div');
+    guide.className = 'guide ' + axis;
+    if (axis === 'v') guide.style.left = pct + '%';
+    else guide.style.top = pct + '%';
+    sheet.insertBefore(guide, xTag);
+    bindGuide(guide);
+    applyThickness(Number(thicknessInput.value) || 2);
+    applyGuideColor(colorInput.value);
+    if (!opts || !opts.silent) syncGridFromGuides();
+    if (select !== false) selectGuide(guide);
+    return guide;
+  }
+
+  function clearGuides() {
+    sheet.querySelectorAll('.guide').forEach(g => g.remove());
+    activeGuide = null;
+  }
+
+  function evenlySpaced(count, start, end, gapPx, axis) {
+    const positions = [];
+    const size = imageSize(axis);
+    const gapPct = size > 0 ? (gapPx / size) * 100 : 0;
+    const span = end - start - gapPct * Math.max(0, count - 1);
+    const step = count > 0 ? span / count : 0;
+    for (let i = 0; i <= count; i++) positions.push(start + i * (step + gapPct));
+    return positions;
+  }
+
+  function rebuildGuides(preferAxis) {
+    detectedFrames = null;
+    const b = guideBounds();
+    clearGuides();
+    evenlySpaced(cols, b.originX, b.endX, gapX, 'x').forEach(pct => createGuide('v', pct, false, { silent: true }));
+    evenlySpaced(rows, b.originY, b.endY, gapY, 'y').forEach(pct => createGuide('h', pct, false, { silent: true }));
+    const preferred = preferAxis === 'h' ? sheet.querySelector('.guide.h') : sheet.querySelector('.guide.v');
+    selectGuide(preferred || sheet.querySelector('.guide'));
+    syncCounters();
+    syncGridFromGuides();
+    if (grid.children.length !== frameCount()) rebuildCells();
+    else {
+      rebuildThumbs();
+      updateFileMeta();
+    }
+    renderSafeFrames();
+  }
+
+  function syncCounters() {
+    colsCounter.querySelector('span').textContent = String(cols);
+    rowsCounter.querySelector('span').textContent = String(rows);
+  }
+
+  function syncAxisSeg() {
+    document.querySelectorAll('#guide-axis-seg button').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.axis === addAxis);
+    });
+  }
+
+  function nudgeGuide(deltaPx) {
+    if (!activeGuide) return;
+    const total = imageSize(axisOf(activeGuide));
+    const next = Math.max(0, Math.min(total, guidePx(activeGuide) + deltaPx));
+    setGuidePercent(activeGuide, (next / total) * 100);
+    scheduleLearn('nudge');
+  }
+
+  function applyThickness(px) {
+    sheet.querySelectorAll('.guide.v').forEach(g => { g.style.width = px + 'px'; });
+    sheet.querySelectorAll('.guide.h').forEach(g => { g.style.height = px + 'px'; });
+  }
+
+  function applyGuideColor(hex) {
+    document.documentElement.style.setProperty('--guide', hex);
+    colorChip.style.background = hex;
+    colorLabel.textContent = hex.toUpperCase();
+  }
+
+  function applyPreviewFilters() {
+    const b = document.querySelector('#adj-brightness').value;
+    const c = document.querySelector('#adj-contrast').value;
+    const o = document.querySelector('#adj-opacity').value / 100;
+    sheetImage.style.filter = 'brightness(' + b + '%) contrast(' + c + '%)';
+    grid.style.opacity = String(o);
+  }
+
+  function loadImageFile(file, opts) {
+    opts = opts || {};
+    return new Promise((resolve, reject) => {
+      if (!file || !file.type.startsWith('image/')) {
+        toast('Selecione um arquivo de imagem.', 'warn');
+        reject(new Error('invalid'));
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        sheetImage.src = url;
+        sheet.classList.add('has-image');
+        hasImage = true;
+        imageW = img.naturalWidth;
+        imageH = img.naturalHeight;
+        fileName = file.name;
+        updateFileMeta();
+        updateRulers();
+        rebuildGuides(addAxis);
+        rebuildCells();
+        requestAnimationFrame(() => {
+          fitToView();
+          try { detectGridFromImage(img); }
+          catch (_) { renderSafeFrames(); toast('Imagem carregada', 'ok'); }
+          schedulePreviewPaint();
+          if (!opts.keepScreen) setScreen('cut');
+          resolve(file);
+        });
+        pushHistory('Imagem aberta: ' + file.name + ' (' + imageW + '×' + imageH + ')');
+      };
+      img.onerror = () => {
+        toast('Não foi possível carregar a imagem.', 'warn');
+        reject(new Error('load'));
+      };
+      img.src = url;
+    });
+  }
+
+  function updateRulers() {
+    const rx = document.querySelector('#ruler-x');
+    const ry = document.querySelector('#ruler-y');
+    const marksX = [0, 0.2, 0.4, 0.6, 0.8].map((t, i) => {
+      const left = 4 + i * 17;
+      return '<span style="left:' + left + '%">' + Math.round(imageW * t) + '</span>';
+    }).join('');
+    const marksY = [0, 0.33, 0.66, 1].map((t, i) => {
+      const top = 4 + i * 25;
+      return '<span style="top:' + top + '%">' + Math.round(imageH * t) + '</span>';
+    }).join('');
+    rx.innerHTML = marksX;
+    ry.innerHTML = marksY;
+  }
+
+  // ============================================================
+  // APRENDIZADO — memoriza ajustes manuais das guias
+  // ============================================================
+  const LEARN_KEY = 'spritecut-learn-v1';
+  let learnEnabled = true;
+  let learnTimer = null;
+
+  function learnMemory() {
+    try { return JSON.parse(localStorage.getItem(LEARN_KEY) || '{}'); }
+    catch (_) { return {}; }
+  }
+
+  function learnKey() {
+    return cols + 'x' + rows;
+  }
+
+  function updateLearnStatus() {
+    const el = document.querySelector('#learn-status');
+    if (!el) return;
+    const mem = learnMemory();
+    const keys = Object.keys(mem);
+    if (!keys.length) {
+      el.textContent = 'Memória: nenhum ajuste salvo ainda.';
+      return;
+    }
+    el.textContent = 'Memória: ' + keys.map(k => {
+      const n = mem[k].count || 0;
+      return k + ' (' + n + ' ajuste' + (n === 1 ? '' : 's') + ')';
+    }).join(' · ');
+  }
+
+  function snapshotGuides() {
+    return {
+      cols, rows,
+      safeMarginPx, gapX, gapY,
+      x: getGuidePositions('v'),
+      y: getGuidePositions('h'),
+      aspect: imageW / Math.max(1, imageH),
+      updatedAt: Date.now()
+    };
+  }
+
+  function saveLearning(reason) {
+    if (!learnEnabled) return;
+    const xs = getGuidePositions('v');
+    const ys = getGuidePositions('h');
+    if (xs.length < 2 || ys.length < 2) return;
+
+    const mem = learnMemory();
+    const key = learnKey();
+    const snap = snapshotGuides();
+    const prev = mem[key];
+    if (!prev || prev.x.length !== snap.x.length || prev.y.length !== snap.y.length) {
+      mem[key] = {
+        count: 1,
+        x: snap.x,
+        y: snap.y,
+        safeMarginPx: snap.safeMarginPx,
+        gapX: snap.gapX,
+        gapY: snap.gapY,
+        lastReason: reason || 'ajuste',
+        updatedAt: Date.now()
+      };
+    } else {
+      const n = prev.count || 1;
+      const a = 1 / (n + 1); // média progressiva
+      prev.x = prev.x.map((v, i) => v * (1 - a) + snap.x[i] * a);
+      prev.y = prev.y.map((v, i) => v * (1 - a) + snap.y[i] * a);
+      prev.safeMarginPx = Math.round(prev.safeMarginPx * (1 - a) + snap.safeMarginPx * a);
+      prev.gapX = prev.gapX * (1 - a) + snap.gapX * a;
+      prev.gapY = prev.gapY * (1 - a) + snap.gapY * a;
+      prev.count = n + 1;
+      prev.lastReason = reason || 'ajuste';
+      prev.updatedAt = Date.now();
+      mem[key] = prev;
+    }
+    localStorage.setItem(LEARN_KEY, JSON.stringify(mem));
+    updateLearnStatus();
+  }
+
+  function scheduleLearn(reason) {
+    clearTimeout(learnTimer);
+    learnTimer = setTimeout(() => {
+      saveLearning(reason);
+      pushHistory('Aprendizado: ' + (reason || 'ajuste') + ' (' + learnKey() + ')');
+    }, 450);
+  }
+
+  /** Mistura detecção com memória do usuário (quanto mais uso, mais peso) */
+  function applyLearningBlend(weight) {
+    if (!learnEnabled || !hasImage) return false;
+    const entry = learnMemory()[learnKey()];
+    if (!entry || !entry.x || entry.x.length !== cols + 1 || entry.y.length !== rows + 1) return false;
+    const wgt = Math.max(0, Math.min(1, weight == null ? Math.min(0.85, 0.35 + entry.count * 0.1) : weight));
+    const curX = getGuidePositions('v');
+    const curY = getGuidePositions('h');
+    if (curX.length !== entry.x.length || curY.length !== entry.y.length) return false;
+
+    const mix = (a, b) => a.map((v, i) => v * (1 - wgt) + b[i] * wgt);
+    const xCuts = mix(curX, entry.x).map(p => Math.round((p / 100) * imageW));
+    const yCuts = mix(curY, entry.y).map(p => Math.round((p / 100) * imageH));
+    safeMarginPx = Math.round(safeMarginPx * (1 - wgt) + (entry.safeMarginPx || safeMarginPx) * wgt);
+    safeMarginInput.value = safeMarginPx + ' px';
+    applyGuideCuts(xCuts, yCuts, imageW, imageH);
+    toast('Memória aplicada (' + Math.round(wgt * 100) + '% dos seus ajustes)', 'ok');
+    pushHistory('Memória de guias ' + learnKey() + ' aplicada');
+    return true;
+  }
+
+  // ============================================================
+  // ZIP (store) + corte de frames
+  // ============================================================
+  function crc32(buf) {
+    let c = ~0;
+    for (let i = 0; i < buf.length; i++) {
+      c ^= buf[i];
+      for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1));
+    }
+    return ~c >>> 0;
+  }
+
+  function u16(n) { return new Uint8Array([n & 255, (n >>> 8) & 255]); }
+  function u32(n) {
+    return new Uint8Array([n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255]);
+  }
+
+  function concatBytes(parts) {
+    let len = 0;
+    parts.forEach(p => { len += p.length; });
+    const out = new Uint8Array(len);
+    let o = 0;
+    parts.forEach(p => { out.set(p, o); o += p.length; });
+    return out;
+  }
+
+  function buildZip(files) {
+    // files: [{name: string, data: Uint8Array}]
+    const locals = [];
+    const centrals = [];
+    let offset = 0;
+    const enc = new TextEncoder();
+
+    files.forEach(file => {
+      const nameBytes = enc.encode(file.name);
+      const data = file.data;
+      const crc = crc32(data);
+      const local = concatBytes([
+        u32(0x04034b50),
+        u16(20), u16(0), u16(0),
+        u16(0), u16(0),
+        u32(crc), u32(data.length), u32(data.length),
+        u16(nameBytes.length), u16(0),
+        nameBytes, data
+      ]);
+      const central = concatBytes([
+        u32(0x02014b50),
+        u16(20), u16(20), u16(0), u16(0),
+        u16(0), u16(0),
+        u32(crc), u32(data.length), u32(data.length),
+        u16(nameBytes.length), u16(0), u16(0),
+        u16(0), u16(0), u32(0), u32(offset),
+        nameBytes
+      ]);
+      locals.push(local);
+      centrals.push(central);
+      offset += local.length;
+    });
+
+    const centralSize = centrals.reduce((s, c) => s + c.length, 0);
+    const end = concatBytes([
+      u32(0x06054b50),
+      u16(0), u16(0),
+      u16(files.length), u16(files.length),
+      u32(centralSize), u32(offset),
+      u16(0)
+    ]);
+    return new Blob([concatBytes([...locals, ...centrals, end])], { type: 'application/zip' });
+  }
+
+  function blobToUint8(blob) {
+    return blob.arrayBuffer().then(buf => new Uint8Array(buf));
+  }
+
+  function getFrameRectsPx() {
+    const xs = getGuidePositions('v').map(p => Math.round((p / 100) * imageW));
+    const ys = getGuidePositions('h').map(p => Math.round((p / 100) * imageH));
+    const rects = [];
+    for (let r = 0; r < ys.length - 1; r++) {
+      for (let c = 0; c < xs.length - 1; c++) {
+        const x = xs[c];
+        const y = ys[r];
+        const w = Math.max(1, xs[c + 1] - xs[c]);
+        const h = Math.max(1, ys[r + 1] - ys[r]);
+        rects.push({
+          index: rects.length + 1,
+          row: r + 1,
+          col: c + 1,
+          x, y, w, h
+        });
+      }
+    }
+    return { xs, ys, rects };
+  }
+
+  function cropFramePng(img, rect) {
+    const canvas = document.createElement('canvas');
+    canvas.width = rect.w;
+    canvas.height = rect.h;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, rect.w, rect.h);
+    ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Falha ao gerar PNG'))), 'image/png');
+    });
+  }
+
+  async function exportFrames() {
+    if (!hasImage || !sheetImage.src) {
+      toast('Abra uma spritesheet antes de exportar.', 'warn');
+      return;
+    }
+    const xsCheck = getGuidePositions('v');
+    const ysCheck = getGuidePositions('h');
+    if (xsCheck.length < 2 || ysCheck.length < 2) {
+      toast('Defina as guias antes de exportar.', 'warn');
+      return;
+    }
+
+    const { rects } = getFrameRectsPx();
+    const total = rects.length;
+    toast('Cortando ' + total + ' frames…');
+    saveLearning('export');
+
+    try {
+      // Garante imagem decodificada
+      if (!sheetImage.complete) {
+        await new Promise((res, rej) => {
+          sheetImage.onload = res;
+          sheetImage.onerror = rej;
+        });
+      }
+
+      const files = [];
+      const folder = 'frames/';
+      for (let i = 0; i < rects.length; i++) {
+        const rect = rects[i];
+        const blob = await cropFramePng(sheetImage, rect);
+        const data = await blobToUint8(blob);
+        const name = folder + 'frame_' + String(rect.index).padStart(3, '0') + '_r' + rect.row + '_c' + rect.col + '.png';
+        files.push({ name, data });
+        if ((i + 1) % 8 === 0 || i === total - 1) {
+          toast('Cortando frames… ' + (i + 1) + '/' + total);
+        }
+      }
+
+      const manifest = {
+        file: fileName,
+        width: imageW,
+        height: imageH,
+        cols, rows,
+        frames: total,
+        contentPadPx: safeMarginPx,
+        cropMode: 'full-cell',
+        guides: {
+          x: getGuidePositions('v').map(p => Math.round((p / 100) * imageW)),
+          y: getGuidePositions('h').map(p => Math.round((p / 100) * imageH))
+        },
+        frameRects: rects,
+        exportedAt: new Date().toISOString()
+      };
+      const manBytes = new TextEncoder().encode(JSON.stringify(manifest, null, 2));
+      files.push({ name: 'manifest.json', data: manBytes });
+
+      const zipBlob = buildZip(files);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(zipBlob);
+      a.download = fileName.replace(/\.[^.]+$/, '') + '_frames.zip';
+      a.click();
+      URL.revokeObjectURL(a.href);
+
+      pushHistory('ZIP exportado: ' + total + ' frames');
+      toast('ZIP pronto: ' + total + ' frames em /frames', 'ok');
+    } catch (err) {
+      console.error(err);
+      toast('Falha ao exportar ZIP. Tente outra imagem/navegador.', 'warn');
+    }
+  }
+
+  // ============================================================
+  // ANIMADOR DE FRAMES
+  // ============================================================
+  const anim = {
+    playing: false,
+    timer: null,
+    fps: 8,
+    loop: true,
+    mode: 'row', // row | all | range
+    row: 0,
+    clipIndex: 0,
+    clip: [], // [{index,row,col,x,y,w,h}]
+    clipKey: '',
+    exportPick: new Set() // índices globais dos frames marcados para HTML
+  };
+
+  function rowName(r) {
+    return rowLabelName(r);
+  }
+
+  function currentClipTitle() {
+    if (anim.mode === 'all') return 'Todos';
+    if (anim.mode === 'range') return 'Intervalo';
+    return rowName(anim.row);
+  }
+
+  function selectedExportFrames() {
+    return anim.clip.filter(f => anim.exportPick.has(f.index));
+  }
+
+  function updateExportCount() {
+    const el = document.querySelector('#anim-export-count');
+    if (el) el.textContent = String(selectedExportFrames().length);
+  }
+
+  function resetExportPickAll() {
+    anim.exportPick = new Set(anim.clip.map(f => f.index));
+    updateExportCount();
+  }
+
+  function buildAnimClip() {
+    const { rects } = (typeof getFrameRectsPx === 'function')
+      ? getFrameRectsPx()
+      : { rects: [] };
+    if (!rects.length) {
+      anim.clip = [];
+      anim.exportPick = new Set();
+      return;
+    }
+
+    if (anim.mode === 'all') {
+      anim.clip = rects.slice();
+    } else if (anim.mode === 'range') {
+      const from = Math.max(1, parseInt(document.querySelector('#anim-from')?.value, 10) || 1);
+      const to = Math.max(from, parseInt(document.querySelector('#anim-to')?.value, 10) || from);
+      anim.clip = rects.filter(r => r.index >= from && r.index <= to);
+    } else {
+      const row = Math.max(0, Math.min(rows - 1, anim.row));
+      anim.clip = rects.filter(r => r.row === row + 1);
+    }
+
+    if (anim.clipIndex >= anim.clip.length) anim.clipIndex = 0;
+    const clipKey = anim.clip.map(f => f.index).join(',');
+    if (clipKey !== anim.clipKey) {
+      anim.clipKey = clipKey;
+      anim.exportPick = new Set(anim.clip.map(f => f.index));
+    } else {
+      const ids = new Set(anim.clip.map(f => f.index));
+      anim.exportPick = new Set([...anim.exportPick].filter(id => ids.has(id)));
+    }
+  }
+
+  function drawAnimFrame() {
+    const canvas = document.querySelector('#anim-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const frame = anim.clip[anim.clipIndex];
+
+    if (!hasImage || !sheetImage.src || !frame) {
+      canvas.width = 512;
+      canvas.height = 256;
+      ctx.fillStyle = '#081522';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#6f8aa3';
+      ctx.font = '14px system-ui,sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(hasImage ? 'Sem frames neste clip' : 'Abra uma spritesheet para animar', canvas.width / 2, canvas.height / 2);
+      document.querySelector('#anim-frame-label').textContent = '—';
+      document.querySelector('#anim-size').textContent = '—';
+      return;
+    }
+
+    canvas.width = frame.w;
+    canvas.height = frame.h;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, frame.w, frame.h);
+    ctx.drawImage(sheetImage, frame.x, frame.y, frame.w, frame.h, 0, 0, frame.w, frame.h);
+
+    document.querySelector('#anim-frame-label').textContent =
+      frame.index + '  ·  r' + frame.row + ' c' + frame.col +
+      '  (' + (anim.clipIndex + 1) + '/' + anim.clip.length + ')';
+    document.querySelector('#anim-size').textContent = frame.w + ' × ' + frame.h + ' px';
+
+    document.querySelectorAll('#anim-strip button').forEach((btn, i) => {
+      btn.classList.toggle('active', i === anim.clipIndex);
+    });
+  }
+
+  function updateAnimClipLabel() {
+    const el = document.querySelector('#anim-clip-name');
+    if (!el) return;
+    el.textContent = currentClipTitle() + ' (' + anim.clip.length + ')';
+    updateExportCount();
+  }
+
+  function rebuildAnimStrip() {
+    const strip = document.querySelector('#anim-strip');
+    if (!strip) return;
+    strip.innerHTML = '';
+    if (!anim.clip.length) {
+      const empty = document.createElement('div');
+      empty.className = 'anim-strip-empty';
+      empty.textContent = hasImage
+        ? 'Nenhum frame neste clip. Ajuste o modo ou as guias.'
+        : 'Abra uma spritesheet e defina a grade para ver o clip.';
+      strip.appendChild(empty);
+      updateExportCount();
+      return;
+    }
+    anim.clip.forEach((frame, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.title = 'Frame ' + frame.index + ' — clique para ver · ✓ para exportar';
+      btn.dataset.clipIndex = String(i);
+      btn.dataset.frameIndex = String(frame.index);
+      const picked = anim.exportPick.has(frame.index);
+      btn.classList.toggle('export-on', picked);
+      btn.classList.toggle('export-off', !picked);
+      if (i === anim.clipIndex) btn.classList.add('active');
+
+      const pick = document.createElement('span');
+      pick.className = 'pick';
+      pick.title = 'Incluir no HTML';
+
+      const c = document.createElement('canvas');
+      paintRectPreview(c, frame, 56);
+      const label = document.createElement('span');
+      label.textContent = String(frame.index);
+      btn.appendChild(pick);
+      btn.appendChild(c);
+      btn.appendChild(label);
+
+      btn.addEventListener('click', e => {
+        const toggling = e.target === pick || e.shiftKey || e.altKey;
+        if (toggling) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (anim.exportPick.has(frame.index)) anim.exportPick.delete(frame.index);
+          else anim.exportPick.add(frame.index);
+          btn.classList.toggle('export-on', anim.exportPick.has(frame.index));
+          btn.classList.toggle('export-off', !anim.exportPick.has(frame.index));
+          updateExportCount();
+          return;
+        }
+        anim.clipIndex = i;
+        drawAnimFrame();
+        selectFrame(frame.index);
+      });
+      strip.appendChild(btn);
+    });
+    updateExportCount();
+  }
+
+  function rebuildAnimRowList() {
+    const list = document.querySelector('#anim-row-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!rows) {
+      list.innerHTML = '<div class="anim-strip-empty">Sem linhas na grade.</div>';
+      return;
+    }
+    for (let r = 0; r < rows; r++) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = rowName(r) + '  ·  ' + cols + ' frames';
+      if (r === anim.row && anim.mode === 'row') btn.classList.add('active');
+      btn.addEventListener('click', () => {
+        anim.mode = 'row';
+        anim.row = r;
+        const modeEl = document.querySelector('#anim-mode');
+        if (modeEl) modeEl.value = 'row';
+        toggleAnimRangeRow();
+        refreshAnimator(false);
+      });
+      list.appendChild(btn);
+    }
+  }
+
+  function toggleAnimRangeRow() {
+    const row = document.querySelector('#anim-range-row');
+    if (row) row.style.display = anim.mode === 'range' ? 'flex' : 'none';
+  }
+
+  function refreshAnimator(keepPlay) {
+    const wasPlaying = anim.playing;
+    if (!keepPlay) stopAnimPlayback(true);
+    buildAnimClip();
+    rebuildAnimRowList();
+    rebuildAnimStrip();
+    updateAnimClipLabel();
+    drawAnimFrame();
+    const playBtn = document.querySelector('#anim-play');
+    if (playBtn) {
+      playBtn.textContent = anim.playing ? '⏸ Pause' : '▶ Play';
+      playBtn.classList.toggle('playing', anim.playing);
+    }
+    if (keepPlay && wasPlaying && anim.clip.length) startAnimPlayback();
+  }
+
+  function stopAnimPlayback(resetIndex) {
+    anim.playing = false;
+    clearTimeout(anim.timer);
+    anim.timer = null;
+    if (resetIndex) anim.clipIndex = 0;
+    const playBtn = document.querySelector('#anim-play');
+    if (playBtn) {
+      playBtn.textContent = '▶ Play';
+      playBtn.classList.remove('playing');
+    }
+    drawAnimFrame();
+  }
+
+  function tickAnim() {
+    if (!anim.playing) return;
+    if (!anim.clip.length) {
+      stopAnimPlayback(true);
+      return;
+    }
+    anim.clipIndex += 1;
+    if (anim.clipIndex >= anim.clip.length) {
+      if (anim.loop) anim.clipIndex = 0;
+      else {
+        anim.clipIndex = anim.clip.length - 1;
+        stopAnimPlayback(false);
+        return;
+      }
+    }
+    drawAnimFrame();
+    const frame = anim.clip[anim.clipIndex];
+    if (frame) selectFrame(frame.index);
+    anim.timer = setTimeout(tickAnim, Math.max(16, 1000 / Math.max(1, anim.fps)));
+  }
+
+  function startAnimPlayback() {
+    if (!anim.clip.length) {
+      toast('Nenhum frame no clip. Ajuste as guias ou o intervalo.', 'warn');
+      return;
+    }
+    if (!hasImage) {
+      toast('Abra uma spritesheet antes de animar.', 'warn');
+      return;
+    }
+    anim.playing = true;
+    clearTimeout(anim.timer);
+    const playBtn = document.querySelector('#anim-play');
+    if (playBtn) {
+      playBtn.textContent = '⏸ Pause';
+      playBtn.classList.add('playing');
+    }
+    anim.timer = setTimeout(tickAnim, Math.max(16, 1000 / Math.max(1, anim.fps)));
+  }
+
+  function toggleAnimPlayback() {
+    if (anim.playing) stopAnimPlayback(false);
+    else startAnimPlayback();
+  }
+
+  function stepAnim(dir) {
+    if (!anim.clip.length) return;
+    stopAnimPlayback(false);
+    anim.clipIndex = (anim.clipIndex + dir + anim.clip.length) % anim.clip.length;
+    drawAnimFrame();
+    const frame = anim.clip[anim.clipIndex];
+    if (frame) selectFrame(frame.index);
+  }
+
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function buildAnimatedIndexHtml(opts) {
+    const title = opts.title;
+    const fps = opts.fps;
+    const loop = opts.loop;
+    const frames = opts.frames; // [{src, label, w, h}]
+    const w = Math.max(...frames.map(f => f.w), 1);
+    const h = Math.max(...frames.map(f => f.h), 1);
+    // só as URLs — elemento limpo para embutir em outros projetos
+    const srcJson = JSON.stringify(frames.map(f => f.src));
+
+    return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHtml(title)}</title>
+<style>
+  html,body{margin:0;padding:0;background:transparent}
+  body{display:inline-block;line-height:0}
+  img{
+    display:block;width:${w}px;height:${h}px;
+    image-rendering:pixelated;image-rendering:crisp-edges;
+    background:transparent;user-select:none;pointer-events:none
+  }
+</style>
+</head>
+<body>
+<img id="s" width="${w}" height="${h}" alt="" />
+<script>
+(function(){
+  var F=${srcJson},i=0,fps=${Math.max(1, fps|0)},loop=${loop ? 'true' : 'false'};
+  var el=document.getElementById('s');
+  function draw(){ el.src=F[i]; }
+  function tick(){
+    i++;
+    if(i>=F.length){ if(!loop){ i=F.length-1; draw(); return; } i=0; }
+    draw();
+    setTimeout(tick,1000/fps);
+  }
+  draw();
+  if(F.length>1) setTimeout(tick,1000/fps);
+})();
+<\/script>
+</body>
+</html>`;
+  }
+
+  async function exportAnimHtml() {
+    if (!hasImage || !sheetImage.src) {
+      toast('Abra uma spritesheet antes de exportar o HTML.', 'warn');
+      return;
+    }
+    const picked = selectedExportFrames();
+    if (!picked.length) {
+      toast('Marque ao menos 1 frame (✓) para exportar.', 'warn');
+      return;
+    }
+
+    toast('Gerando HTML com ' + picked.length + ' frame(s)…');
+    try {
+      const frames = [];
+      for (let i = 0; i < picked.length; i++) {
+        const rect = picked[i];
+        const blob = await cropFramePng(sheetImage, rect);
+        const src = await blobToDataUrl(blob);
+        frames.push({
+          src,
+          label: String(rect.index),
+          w: rect.w,
+          h: rect.h
+        });
+      }
+
+      const clipTitle = currentClipTitle();
+      const title = (fileName.replace(/\.[^.]+$/, '') || 'sprite') + ' — ' + clipTitle;
+      const html = buildAnimatedIndexHtml({
+        title,
+        fps: anim.fps,
+        loop: anim.loop,
+        frames
+      });
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const safeClip = clipTitle.replace(/[^\w\-]+/g, '_');
+      a.download = (fileName.replace(/\.[^.]+$/, '') || 'sprite') + '_' + safeClip + '_index.html';
+      a.click();
+      URL.revokeObjectURL(a.href);
+
+      pushHistory('HTML animado: ' + clipTitle + ' (' + picked.length + ' frames)');
+      toast('HTML pronto: ' + picked.length + ' frames · ' + clipTitle, 'ok');
+    } catch (err) {
+      console.error(err);
+      toast('Falha ao gerar HTML animado.', 'warn');
+    }
+  }
+
+  // --- Wire UI ---
+  sheet.querySelectorAll('.guide').forEach(bindGuide);
+
+  document.querySelectorAll('#side-nav button, #mobile-nav button').forEach(btn => {
+    btn.addEventListener('click', () => setScreen(btn.dataset.screen, btn.dataset.focus || null));
+  });
+
+  document.querySelectorAll('#main-tabs .tab').forEach(btn => {
+    btn.addEventListener('click', () => setTab(btn.dataset.tab));
+  });
+  document.querySelector('#btn-show-guides').addEventListener('click', () => setTab('guides'));
+
+  document.querySelectorAll('#guide-axis-seg button').forEach(btn => {
+    btn.addEventListener('click', () => { addAxis = btn.dataset.axis; syncAxisSeg(); });
+  });
+
+  function wireCounter(el, get, set) {
+    el.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        set(Math.max(1, Math.min(32, get() + Number(btn.dataset.delta))));
+        syncCounters();
+        updateFileMeta();
+      });
+    });
+  }
+  wireCounter(colsCounter, () => cols, v => { cols = v; });
+  wireCounter(rowsCounter, () => rows, v => { rows = v; });
+
+  positionInput.addEventListener('change', () => {
+    if (!activeGuide) return;
+    const px = parsePx(positionInput.value);
+    if (Number.isNaN(px)) return;
+    setGuidePercent(activeGuide, (px / imageSize(axisOf(activeGuide))) * 100);
+    scheduleLearn('posição');
+  });
+  positionInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); positionInput.dispatchEvent(new Event('change')); positionInput.blur(); }
+  });
+
+  gapXInput.addEventListener('change', () => {
+    const n = parsePx(gapXInput.value);
+    if (!Number.isNaN(n)) gapX = Math.max(0, n);
+    gapXInput.value = gapX + ' px';
+  });
+  gapYInput.addEventListener('change', () => {
+    const n = parsePx(gapYInput.value);
+    if (!Number.isNaN(n)) gapY = Math.max(0, n);
+    gapYInput.value = gapY + ' px';
+  });
+  safeMarginInput.addEventListener('change', () => {
+    const n = parsePx(safeMarginInput.value);
+    if (!Number.isNaN(n)) safeMarginPx = Math.max(4, Math.round(n));
+    safeMarginInput.value = safeMarginPx + ' px';
+    renderSafeFrames();
+    toast('Folga mín. = ' + safeMarginPx + 'px. Use Detectar grade para reapliar proteção.', 'ok');
+  });
+
+  thicknessInput.addEventListener('input', () => applyThickness(Number(thicknessInput.value) || 2));
+  colorInput.addEventListener('input', () => applyGuideColor(colorInput.value));
+
+  document.querySelector('#btn-detect-grid').addEventListener('click', () => detectGridFromImage());
+  document.querySelector('#btn-apply-preset').addEventListener('click', () => applyPromptPreset());
+
+  const promptEl = document.querySelector('#test-prompt');
+  const negEl = document.querySelector('#test-negative');
+  if (promptEl) promptEl.value = TEST_PROMPT;
+  if (negEl) negEl.value = TEST_NEGATIVE;
+  document.querySelector('#btn-copy-prompt')?.addEventListener('click', () => copyText(TEST_PROMPT, 'Prompt'));
+  document.querySelector('#btn-copy-negative')?.addEventListener('click', () => copyText(TEST_NEGATIVE, 'Negativo'));
+  document.querySelector('#btn-apply-preset-about')?.addEventListener('click', () => applyPromptPreset());
+
+  document.querySelector('#btn-add-guide').addEventListener('click', () => {
+    const same = [...sheet.querySelectorAll('.guide.' + addAxis)];
+    let pct = 50;
+    if (activeGuide && activeGuide.classList.contains(addAxis)) pct = Math.min(100, guidePercent(activeGuide) + 3);
+    else if (same.length) pct = Math.min(100, Math.max(...same.map(guidePercent)) + 3);
+    createGuide(addAxis, pct, true);
+    pushHistory('Guia ' + (addAxis === 'v' ? 'vertical' : 'horizontal') + ' adicionada');
+  });
+
+  document.querySelector('#btn-remove-guide').addEventListener('click', () => {
+    if (!activeGuide) return;
+    const next = activeGuide.nextElementSibling?.classList.contains('guide')
+      ? activeGuide.nextElementSibling
+      : activeGuide.previousElementSibling?.classList.contains('guide')
+        ? activeGuide.previousElementSibling : null;
+    activeGuide.remove();
+    selectGuide(next || sheet.querySelector('.guide'));
+    syncGridFromGuides();
+    pushHistory('Guia removida');
+  });
+
+  document.querySelector('#btn-reset-guides').addEventListener('click', () => {
+    cols = DEFAULT.cols; rows = DEFAULT.rows; gapX = 0; gapY = 0;
+    safeMarginPx = DEFAULT.safeMargin;
+    gapXInput.value = '0 px'; gapYInput.value = '0 px';
+    safeMarginInput.value = safeMarginPx + ' px';
+    thicknessInput.value = String(DEFAULT.thickness);
+    colorInput.value = DEFAULT.color.toLowerCase();
+    applyThickness(DEFAULT.thickness);
+    applyGuideColor(DEFAULT.color);
+    detectedFrames = null;
+    applyPromptPreset({ toast: false });
+    toast('Guias redefinidas para o preset do prompt.', 'ok');
+    pushHistory('Guias redefinidas (preset)');
+  });
+
+  document.querySelector('#btn-apply-guides').addEventListener('click', () => {
+    gapX = Math.max(0, parsePx(gapXInput.value) || 0);
+    gapY = Math.max(0, parsePx(gapYInput.value) || 0);
+    safeMarginPx = Math.max(0, Math.round(parsePx(safeMarginInput.value) || 0));
+    gapXInput.value = gapX + ' px';
+    gapYInput.value = gapY + ' px';
+    safeMarginInput.value = safeMarginPx + ' px';
+    detectedFrames = null;
+    rebuildGuides(addAxis);
+    scheduleLearn('aplicar');
+    pushHistory('Guias aplicadas (' + cols + '×' + rows + ', margem ' + safeMarginPx + 'px)');
+    toast('Guias + margem segura aplicadas', 'ok');
+  });
+
+  const optLearn = document.querySelector('#opt-learn');
+  if (optLearn) {
+    learnEnabled = !!optLearn.checked;
+    optLearn.addEventListener('change', () => {
+      learnEnabled = !!optLearn.checked;
+      toast(learnEnabled ? 'Memória de guias ligada' : 'Memória de guias desligada');
+      updateLearnStatus();
+    });
+  }
+  document.querySelector('#btn-clear-learn')?.addEventListener('click', () => {
+    localStorage.removeItem(LEARN_KEY);
+    updateLearnStatus();
+    toast('Aprendizado limpo', 'ok');
+    pushHistory('Memória de guias limpa');
+  });
+
+  btnNudgeNeg.addEventListener('click', () => nudgeGuide(-1));
+  btnNudgePos.addEventListener('click', () => nudgeGuide(1));
+
+  document.querySelector('#btn-zoom-in').addEventListener('click', () => setZoom(zoom * 1.15));
+  document.querySelector('#btn-zoom-out').addEventListener('click', () => setZoom(zoom / 1.15));
+  document.querySelector('#btn-zoom-100').addEventListener('click', () => zoomActualPixels());
+  document.querySelector('#btn-zoom-fit').addEventListener('click', () => {
+    fitToView();
+    toast('Grade ajustada ao canvas', 'ok');
+  });
+
+  stage.addEventListener('scroll', updateMiniViewport, { passive: true });
+
+  document.querySelector('#tool-pan').addEventListener('click', () => setTool('pan'));
+  document.querySelector('#tool-guides').addEventListener('click', () => { setTool('guides'); setTab('guides'); });
+
+  document.querySelector('#btn-fullscreen').addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await canvasWrap.requestFullscreen();
+        toast('Tela cheia ativada');
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (_) {
+      toast('Tela cheia indisponível neste navegador.', 'warn');
+    }
+  });
+
+  // Pan on stage
+  canvasWrap.addEventListener('pointerdown', e => {
+    if (activeTool !== 'pan') return;
+    if (e.target.closest('.guide')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    pan.active = true;
+    pan.pointerId = e.pointerId;
+    pan.startX = e.clientX;
+    pan.startY = e.clientY;
+    pan.scrollLeft = stage.scrollLeft;
+    pan.scrollTop = stage.scrollTop;
+    canvasWrap.classList.add('dragging');
+    try { canvasWrap.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  canvasWrap.addEventListener('pointermove', e => {
+    if (!pan.active || pan.pointerId !== e.pointerId) return;
+    stage.scrollLeft = pan.scrollLeft - (e.clientX - pan.startX);
+    stage.scrollTop = pan.scrollTop - (e.clientY - pan.startY);
+  });
+  function endPan(e) {
+    if (!pan.active || (e && pan.pointerId !== e.pointerId)) return;
+    pan.active = false;
+    pan.pointerId = null;
+    canvasWrap.classList.remove('dragging');
+  }
+  canvasWrap.addEventListener('pointerup', endPan);
+  canvasWrap.addEventListener('pointercancel', endPan);
+
+  canvasWrap.addEventListener('wheel', e => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    setZoom(zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1));
+  }, { passive: false });
+
+  document.querySelector('#btn-open').addEventListener('click', () => fileInput.click());
+  document.querySelector('#btn-swap').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (file) loadImageFile(file);
+    fileInput.value = '';
+  });
+
+  document.querySelector('#btn-batch-open').addEventListener('click', () => batchInput.click());
+  let batchFiles = [];
+  batchInput.addEventListener('change', () => {
+    batchFiles = [...(batchInput.files || [])].filter(f => f.type.startsWith('image/'));
+    const list = document.querySelector('#batch-list');
+    const exportBtn = document.querySelector('#btn-batch-export');
+    list.innerHTML = batchFiles.map(f => '<li>' + f.name + '</li>').join('') || '<li>Nenhum arquivo no lote</li>';
+    if (exportBtn) exportBtn.disabled = !batchFiles.length;
+    document.querySelector('#batch-status').textContent = batchFiles.length
+      ? batchFiles.length + ' arquivo(s) prontos. As guias atuais serão usadas em cada ZIP.'
+      : '';
+    if (batchFiles[0]) loadImageFile(batchFiles[0], { keepScreen: true });
+    pushHistory('Lote: ' + batchFiles.length + ' arquivo(s)');
+    toast(batchFiles.length + ' arquivo(s) no lote.', 'ok');
+    batchInput.value = '';
+  });
+  document.querySelector('#btn-batch-export')?.addEventListener('click', async () => {
+    if (!batchFiles.length) {
+      toast('Selecione imagens no lote primeiro.', 'warn');
+      return;
+    }
+    const status = document.querySelector('#batch-status');
+    const btn = document.querySelector('#btn-batch-export');
+    if (btn) btn.disabled = true;
+    for (let i = 0; i < batchFiles.length; i++) {
+      status.textContent = 'Exportando ' + (i + 1) + '/' + batchFiles.length + ': ' + batchFiles[i].name;
+      try {
+        await loadImageFile(batchFiles[i], { keepScreen: true });
+        await exportFrames();
+        await new Promise(r => setTimeout(r, 350));
+      } catch (_) {
+        toast('Falha em ' + batchFiles[i].name, 'warn');
+      }
+    }
+    status.textContent = 'Lote concluído: ' + batchFiles.length + ' ZIP(s).';
+    if (btn) btn.disabled = false;
+    pushHistory('Lote exportado: ' + batchFiles.length + ' ZIP(s)');
+    toast('Lote exportado', 'ok');
+  });
+
+  document.querySelector('#btn-export').addEventListener('click', exportFrames);
+  document.querySelector('#anim-export')?.addEventListener('click', exportFrames);
+  document.querySelector('#anim-export-html')?.addEventListener('click', exportAnimHtml);
+  document.querySelector('#anim-pick-all')?.addEventListener('click', () => {
+    resetExportPickAll();
+    rebuildAnimStrip();
+    toast('Todos os frames do clip marcados', 'ok');
+  });
+  document.querySelector('#anim-pick-none')?.addEventListener('click', () => {
+    anim.exportPick = new Set();
+    updateExportCount();
+    rebuildAnimStrip();
+  });
+  document.querySelector('#anim-pick-only')?.addEventListener('click', () => {
+    const cur = anim.clip[anim.clipIndex];
+    if (!cur) return;
+    anim.exportPick = new Set([cur.index]);
+    updateExportCount();
+    rebuildAnimStrip();
+    toast('Somente frame ' + cur.index + ' marcado', 'ok');
+  });
+
+  // Animador
+  document.querySelector('#anim-play')?.addEventListener('click', toggleAnimPlayback);
+  document.querySelector('#anim-prev')?.addEventListener('click', () => stepAnim(-1));
+  document.querySelector('#anim-next')?.addEventListener('click', () => stepAnim(1));
+  document.querySelector('#anim-stop')?.addEventListener('click', () => stopAnimPlayback(true));
+  document.querySelector('#anim-refresh')?.addEventListener('click', () => {
+    refreshAnimator(false);
+    toast('Clip atualizado a partir das guias', 'ok');
+  });
+  document.querySelector('#anim-fps')?.addEventListener('input', e => {
+    anim.fps = Math.max(1, Math.min(30, Number(e.target.value) || 8));
+    document.querySelector('#anim-fps-val').textContent = String(anim.fps);
+  });
+  document.querySelector('#anim-loop')?.addEventListener('change', e => {
+    anim.loop = !!e.target.checked;
+  });
+  document.querySelector('#anim-mode')?.addEventListener('change', e => {
+    anim.mode = e.target.value;
+    toggleAnimRangeRow();
+    refreshAnimator(false);
+  });
+  ['anim-from', 'anim-to'].forEach(id => {
+    document.querySelector('#' + id)?.addEventListener('change', () => {
+      if (anim.mode === 'range') refreshAnimator(false);
+    });
+  });
+
+  document.querySelector('#opt-snap').addEventListener('change', e => {
+    snapEnabled = e.target.checked;
+    toast(snapEnabled ? 'Snap ativado' : 'Snap desativado');
+  });
+  document.querySelector('#opt-rulers').addEventListener('change', e => {
+    canvasWrap.classList.toggle('hide-rulers', !e.target.checked);
+  });
+  document.querySelector('#opt-minimap').addEventListener('change', e => {
+    canvasWrap.classList.toggle('hide-minimap', !e.target.checked);
+  });
+
+  ['adj-brightness', 'adj-contrast', 'adj-opacity'].forEach(id => {
+    document.querySelector('#' + id).addEventListener('input', applyPreviewFilters);
+  });
+  document.querySelector('#btn-reset-adjust').addEventListener('click', () => {
+    document.querySelector('#adj-brightness').value = 100;
+    document.querySelector('#adj-contrast').value = 100;
+    document.querySelector('#adj-opacity').value = 100;
+    applyPreviewFilters();
+    toast('Ajustes redefinidos');
+  });
+
+  document.addEventListener('keydown', e => {
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    if (app.dataset.screen === 'animate') {
+      if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); toggleAnimPlayback(); return; }
+      if (e.key === 'ArrowLeft' || e.key === '[') { e.preventDefault(); stepAnim(-1); return; }
+      if (e.key === 'ArrowRight' || e.key === ']') { e.preventDefault(); stepAnim(1); return; }
+      if (e.key === 'Escape') { e.preventDefault(); stopAnimPlayback(true); return; }
+      return;
+    }
+
+    if ((e.key === '+' || e.key === '=') && (e.ctrlKey || e.metaKey)) { e.preventDefault(); setZoom(zoom * 1.15); return; }
+    if (e.key === '-' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); setZoom(zoom / 1.15); return; }
+    if ((e.key === '0') && (e.ctrlKey || e.metaKey)) { e.preventDefault(); fitToView(); return; }
+    if (e.key === 'h' || e.key === 'H') { setTool('pan'); return; }
+    if (e.key === 'g' || e.key === 'G') { setTool('guides'); setTab('guides'); return; }
+
+    if (!activeGuide || activeTool !== 'guides') return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === '[') { e.preventDefault(); nudgeGuide(-1); }
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ']') { e.preventDefault(); nudgeGuide(1); }
+    else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); document.querySelector('#btn-remove-guide').click(); }
+  });
+
+  window.addEventListener('resize', () => {
+    if (activeGuide) updateGuideReadout(activeGuide);
+    updateMiniViewport();
+  });
+
+  // Init — preset do prompt (grade precisa 8×7)
+  applyPromptPreset({ toast: false });
+  selectFrame(1);
+  syncCounters();
+  applyThickness(Number(thicknessInput.value) || 2);
+  applyGuideColor(colorInput.value);
+  updateLearnStatus();
+  updateFileMeta();
+  rebuildRowLabels();
+  setTool('guides');
+  setTab('guides');
+  setScreen('cut');
+  requestAnimationFrame(() => {
+    fitToView();
+    pushHistory('Sessão iniciada — preset ' + SHEET_PRESET.width + '×' + SHEET_PRESET.height);
+  });
+})();
+</script>
+</body>
+</html>
