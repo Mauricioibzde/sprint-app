@@ -456,8 +456,8 @@ function layoutFromBlobs(blobs: SpriteBlob[], w: number, h: number, gutterHint: 
   const halfGap = Math.floor(Math.min(gapsX.length ? median(gapsX) : pitchX - maxW, gapsY.length ? median(gapsY) : pitchY - maxH) / 2);
   const pad = Math.max(6, gutterHint, Math.min(Math.max(4, halfGap), Math.round(Math.min(maxW, maxH) * 0.18)));
 
-  let cellW = Math.max(8, Math.round(Math.max(maxW + pad * 2, pitchX)));
-  let cellH = Math.max(8, Math.round(Math.max(maxH + pad * 2, pitchY)));
+  const cellW = Math.max(8, Math.round(Math.max(maxW + pad * 2, pitchX)));
+  const cellH = Math.max(8, Math.round(Math.max(maxH + pad * 2, pitchY)));
 
   const originCandidatesX = assigned.map((b) => b.x - pad - b.col * cellW);
   const originCandidatesY = assigned.map((b) => b.y - pad - b.row * cellH);
@@ -520,7 +520,8 @@ function fitUniformGrid(
   layout: SpriteLayout,
   bg: BgSample
 ): SpriteLayout {
-  let { originX, originY, cellW, cellH, cols, rows, pad } = layout;
+  const { cols, rows } = layout;
+  let { originX, originY, cellW, cellH, pad } = layout;
   for (let i = 0; i < 10; i++) {
     if (!gridHitsArt(data, w, h, originX, originY, cellW, cellH, cols, rows, bg, layout.blobs)) break;
     cellW += 2;
