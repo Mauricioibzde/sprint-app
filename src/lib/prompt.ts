@@ -2,7 +2,6 @@ import type { PromptParams } from "@/types";
 import {
   PARAMS_KEY,
   PROMPT_DEFAULTS,
-  canvasFromParams,
   clampInt,
   cloneData
 } from "@/lib/constants";
@@ -19,7 +18,7 @@ export function normalizePromptParams(raw: unknown): PromptParams {
       : cloneData(d.clips);
   return {
     cols: clampInt(src.cols, 1, 32, d.cols),
-    labelW: clampInt(src.labelW, 0, 4096, d.labelW),
+    labelW: 0,
     cellW: clampInt(src.cellW, 8, 4096, d.cellW),
     cellH: clampInt(src.cellH, 8, 4096, d.cellH),
     gutter: clampInt(src.gutter, 0, 256, d.gutter),
@@ -80,11 +79,9 @@ export function nextClipName(params: PromptParams, base: string): string {
 }
 
 export function buildTestPrompt(p: PromptParams): string {
-  const size = canvasFromParams(p);
   const nRows = Math.max(1, p.clips.length);
-  const labelLines = p.clips
-    .map((_, i) => "Linha " + (i + 1) + ": " + rowLabelName(p, i) + " (" + p.cols + " FRAMES)")
-    .join("\n");
+  const width = p.cols * p.cellW;
+  const height = nRows * p.cellH;
   const animLines = p.clips
     .map((c, i) => {
       const desc = String(c.desc || "").trim() || "ciclo da animação";
@@ -94,28 +91,22 @@ export function buildTestPrompt(p: PromptParams): string {
   const extra = String(p.extra || "").trim();
   return (
     "Crie uma **spritesheet 2D limpa para jogo**, com tamanho exato de **" +
-    size.width +
+    width +
     " × " +
-    size.height +
-    " pixels**, em **PNG com fundo de canal alfa TOTALMENTE TRANSPARENTE** (alpha = 0 em todos os locais onde não houver arte ou texto — sem preenchimento preto, sem padrão quadriculado, sem nenhuma cor sólida atrás dos sprites), estilo " +
+    height +
+    " pixels**, em **PNG com fundo de canal alfa TOTALMENTE TRANSPARENTE** (alpha = 0 em todos os pixels sem arte — sem preenchimento preto, sem padrão quadriculado, sem nenhuma cor sólida atrás dos sprites), estilo " +
     p.style +
     ", sem brilho com antialiasing vazando para pixels vazios, sem sombras projetadas no fundo, sem linhas verdes, sem linhas ciano, sem sobreposições de guias, sem interface (UI) e sem marca-d'água.\n\n" +
-    "**COLUNA DE RÓTULOS À ESQUERDA (x=0 até x=" +
-    p.labelW +
-    "):** fundo totalmente transparente, com texto branco, em negrito, maiúsculo e fonte sans-serif (somente os glifos brancos devem ser opacos), centralizado verticalmente em cada linha:\n\n" +
-    labelLines +
-    "\n\n" +
-    "**GRADE DE SPRITES (x=" +
-    p.labelW +
-    " até x=" +
-    size.width +
-    ", altura total de 0 até " +
-    size.height +
+    "**SEM TEXTO NA IMAGEM:** não desenhe letras, números, títulos, legendas, nomes de animação, «IDLE», «FRAMES», rótulos à esquerda, captions nem qualquer tipografia. A folha deve conter **apenas** os sprites do personagem, como um asset de jogo pronto a recortar.\n\n" +
+    "**GRADE DE SPRITES (x=0 até x=" +
+    width +
+    ", y=0 até y=" +
+    height +
     "):** grade perfeitamente regular de **" +
     p.cols +
     " colunas × " +
     nRows +
-    " linhas**.\n\n" +
+    " linhas**, ocupando a imagem inteira, sem coluna vazia e sem margem de texto à esquerda.\n\n" +
     "Cada célula deve ter exatamente **" +
     p.cellW +
     " × " +
@@ -123,24 +114,24 @@ export function buildTestPrompt(p: PromptParams): string {
     " pixels**.\n\n" +
     "Dentro de cada célula, deixe uma margem totalmente transparente de pelo menos **" +
     p.gutter +
-    " px em todos os lados** (uma área de segurança vazia para garantir que a arte do personagem nunca seja cortada) e posicione a arte do personagem centralizada na área interna restante.\n\n" +
-    "**NÃO desenhe retângulos ou bordas verdes, vermelhas ou ciano ao redor dos frames.** Apenas a arte do personagem (e o texto dos rótulos) deve aparecer sobre o canal alfa transparente — todos os pixels vazios devem ser **RGBA(0,0,0,0)**.\n\n" +
+    " px em todos os lados** (área de segurança para a arte nunca ser cortada) e posicione o personagem centralizado na área interna. Espaçamento uniforme entre frames; os sprites não se tocam nem se sobrepõem.\n\n" +
+    "**NÃO desenhe retângulos ou bordas verdes, vermelhas ou ciano ao redor dos frames.** Só a arte do personagem sobre canal alfa — pixels vazios **RGBA(0,0,0,0)**.\n\n" +
     "**Personagem:** " +
     p.character +
     "\n\n" +
     "**Animações por linha (" +
     p.cols +
-    " frames cada, da esquerda para a direita):**\n\n" +
+    " frames cada, da esquerda para a direita).** Os nomes abaixo são só instrução de pose — **não os escreva na PNG:**\n\n" +
     animLines +
     "\n" +
     (extra ? "\n" + extra + "\n" : "") +
     "\nExporte como **PNG-24/32 com canal alfa**.\n\n" +
-    "**Alinhamento rigoroso:** cada frame deve estar perfeitamente preso à grade matemática, com tamanho de célula idêntico, sem sobreposição entre sprites, sem frames inclinados, sem perspectiva e com **qualidade de asset profissional pronto para uso em jogos**."
+    "**Alinhamento rigoroso:** cada frame preso à grade matemática, célula do mesmo tamanho, sem texto, sem sobreposição, sem inclinação, sem perspectiva, **qualidade de asset profissional para jogo**."
   );
 }
 
 export function buildTestNegative(): string {
-  return "solid black background, #000000 fill, opaque backdrop, white background, colored background, checkerboard, matte backdrop, green border, neon green box, cyan guides, grid overlay lines, ruler, watermark, logo, blur, photo, 3D, uneven spacing, overlapping sprites, random layout, text over sprites, textured background, shadows on background, low contrast, extra characters, UI chrome, JPEG, flattened no-alpha";
+  return "text, letters, numbers, typography, caption, title, label, legend, watermark, logo, IDLE, FRAMES, row names, left-side text column, UI chrome, solid black background, #000000 fill, opaque backdrop, white background, colored background, checkerboard, matte backdrop, green border, neon green box, cyan guides, grid overlay lines, ruler, blur, photo, 3D, uneven spacing, overlapping sprites, random layout, text over sprites, textured background, shadows on background, low contrast, extra characters, JPEG, flattened no-alpha";
 }
 
 export async function copyText(text: string): Promise<boolean> {

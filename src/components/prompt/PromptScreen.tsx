@@ -292,7 +292,7 @@ export function PromptScreen() {
               </div>
             </div>
             <p className="hint">
-              Canvas = {p.labelW} + {p.cols} × {p.cellW} → {size.width}×{size.height}. Coluna de rótulos {p.labelW} px.
+              Canvas = {p.cols} × {p.cellW} por {nRows} × {p.cellH} → {p.cols * p.cellW}×{nRows * p.cellH}. Sem texto na PNG.
             </p>
           </article>
 
@@ -301,7 +301,7 @@ export function PromptScreen() {
               <span className="sec-num">3</span>
               <div>
                 <h3>Animações por linha</h3>
-                <p>Uma linha = um clip. O nome vai para o rótulo, o ZIP e o ecrã Animar.</p>
+                <p>Uma linha = um clip. O nome fica no ZIP e no ecrã Animar — não é desenhado na PNG.</p>
               </div>
             </header>
             <div className="clip-preset-bar" ref={presetPanelRef}>

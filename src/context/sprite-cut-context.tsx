@@ -46,7 +46,7 @@ import {
   shiftLockedAxis,
   uid
 } from "@/lib/guides";
-import { detectGenericGrid, protectCutsFromContent, readImageData } from "@/lib/grid-detect";
+import { detectGenericGrid, detectSpriteLayout, protectCutsFromContent, readImageData } from "@/lib/grid-detect";
 import { frameOffsets, medianOffset, signedPx } from "@/lib/frame-align";
 import { blobToDataUrl, buildAnimatedIndexHtml, cropFramePng } from "@/lib/export";
 import { blobToUint8, buildZip, downloadBlob } from "@/lib/zip";
@@ -370,8 +370,18 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
   }, [promptParams, hasImage, imageW, imageH]);
 
   const applyLockedGrid = useCallback(
-    (originX: number, originY: number, nCols: number, nRows: number) => {
-      const { w, h, cellW, cellH } = promptCellMetrics();
+    (
+      originX: number,
+      originY: number,
+      nCols: number,
+      nRows: number,
+      cell?: { cellW: number; cellH: number }
+    ) => {
+      const metrics = promptCellMetrics();
+      const w = metrics.w;
+      const h = metrics.h;
+      const cellW = cell?.cellW ?? metrics.cellW;
+      const cellH = cell?.cellH ?? metrics.cellH;
       const built = buildLockedGrid({
         originX,
         originY,
@@ -555,32 +565,57 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
     const scaled = ratioOk && Math.abs(w / p.width - h / p.height) < 0.02;
     const nCols = Math.max(1, cols);
     const nRows = Math.max(1, rows);
-
-    if (lockUniformGrid) {
-      const cells = scaledPromptCells(p.width, p.height, p.cellW, p.cellH, p.labelW, w, h);
-      let originX = cells.defaultOriginX;
-      let originY = cells.defaultOriginY;
-      if (!(exact || scaled)) {
-        try {
-          const data = readImageData(imageEl, w, h);
-          const found = detectGenericGrid(data, w, h, nCols, nRows);
-          if (found?.xCuts.length && found.yCuts.length) {
-            originX = found.xCuts[0];
-            originY = found.yCuts[0];
-          }
-        } catch {
-          /* keep prompt origin */
-        }
-      }
-      applyLockedGrid(originX, originY, p.cols, p.rows);
-      showToast("Grade uniforme " + cells.cellW + "×" + cells.cellH + " px", "ok");
-      pushHistory("Grade uniforme " + cells.cellW + "×" + cells.cellH);
-      setTab("guides");
-      return;
-    }
+    const gutterHint = Math.max(safeMarginPx, p.gutter, minContentPadForImage(w, h));
 
     try {
       const data = readImageData(imageEl, w, h);
+      const layout = detectSpriteLayout(data, w, h, { gutter: gutterHint });
+      if (layout) {
+        persistParams({
+          ...promptParams,
+          cols: layout.cols,
+          cellW: layout.cellW,
+          cellH: layout.cellH,
+          labelW: 0,
+          gutter: layout.pad
+        });
+        setSafeMarginPx(layout.pad);
+        applyLockedGrid(layout.originX, layout.originY, layout.cols, layout.rows, {
+          cellW: layout.cellW,
+          cellH: layout.cellH
+        });
+        const msg =
+          layout.blobs.length +
+          " sprites · grade " +
+          layout.cols +
+          "×" +
+          layout.rows +
+          " · célula " +
+          layout.cellW +
+          "×" +
+          layout.cellH;
+        showToast(msg, "ok");
+        pushHistory("Grade pela arte: " + msg);
+        setTab("guides");
+        return;
+      }
+
+      if (lockUniformGrid) {
+        const cells = scaledPromptCells(p.width, p.height, p.cellW, p.cellH, p.labelW, w, h);
+        let originX = cells.defaultOriginX;
+        let originY = cells.defaultOriginY;
+        const found = detectGenericGrid(data, w, h, nCols, nRows);
+        if (found?.xCuts.length && found.yCuts.length) {
+          originX = found.xCuts[0];
+          originY = found.yCuts[0];
+        }
+        applyLockedGrid(originX, originY, p.cols, p.rows);
+        showToast("Grade uniforme " + cells.cellW + "×" + cells.cellH + " px", "ok");
+        pushHistory("Grade uniforme " + cells.cellW + "×" + cells.cellH);
+        setTab("guides");
+        return;
+      }
+
       if (exact || scaled) {
         const sx = w / p.width;
         const sy = h / p.height;
@@ -594,9 +629,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
           p.rows
         );
         const pad = Math.max(safeMarginPx, minContentPadForImage(w, h), Math.round(p.gutter * Math.min(sx, sy)));
-        const xs = built.xCuts;
-        const ys = built.yCuts;
-        const protectedCuts = protectCutsFromContent(data, w, h, xs.length ? xs : [0, w], ys.length ? ys : [0, h], pad);
+        const protectedCuts = protectCutsFromContent(data, w, h, built.xCuts, built.yCuts, pad);
         setSafeMarginPx(pad);
         applyCuts(protectedCuts.xCuts, protectedCuts.yCuts, w, h);
         const entry = learnMemory()[p.cols + "x" + p.rows];
@@ -645,6 +678,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
     safeMarginPx,
     applyCuts,
     applyLockedGrid,
+    persistParams,
     lockUniformGrid,
     learnEnabled,
     cols,

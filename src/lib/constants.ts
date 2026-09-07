@@ -34,7 +34,7 @@ export const CLIP_PRESETS = [
 
 export const PROMPT_DEFAULTS: PromptParams = {
   cols: 8,
-  labelW: 512,
+  labelW: 0,
   cellW: 512,
   cellH: 256,
   gutter: 12,
