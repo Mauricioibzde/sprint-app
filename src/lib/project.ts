@@ -32,6 +32,7 @@ export type SpriteProject = {
   safeMarginPx: number;
   guideColor: string;
   guideThickness: number;
+  autoCenterFrames?: boolean;
   anim: ProjectAnim;
 };
 
@@ -99,6 +100,7 @@ export function parseProject(raw: unknown): SpriteProject | null {
     safeMarginPx: Math.max(0, Number(src.safeMarginPx) || 0),
     guideColor: String(src.guideColor || "#00e7ff"),
     guideThickness: Math.max(1, Number(src.guideThickness) || 2),
+    autoCenterFrames: src.autoCenterFrames !== false,
     anim: {
       fps: Math.max(1, Number(src.anim?.fps) || 8),
       loop: src.anim?.loop !== false,

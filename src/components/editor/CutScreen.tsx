@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type PointerEvent, type WheelEvent } from 
 import { flushSync } from "react-dom";
 import { FramePreview } from "@/components/ui/FramePreview";
 import { useSpriteCut } from "@/context/sprite-cut-context";
+import { formatAlignDelta } from "@/lib/frame-align";
 import { gridStyle, percents } from "@/lib/guides";
 import { rowLabelName } from "@/lib/prompt";
 
@@ -350,7 +351,7 @@ export function CutScreen() {
                       className={selectedFrame === i + 1 ? "active" : ""}
                       onClick={() => app.selectFrame(i + 1)}
                     >
-                      <FramePreview img={imageEl} rect={rects[i]} maxSide={48} />
+                      <FramePreview img={imageEl} rect={rects[i]} maxSide={48} center={app.autoCenterFrames} />
                     </i>
                   ))}
                 </div>
@@ -373,7 +374,7 @@ export function CutScreen() {
                   onClick={() => app.selectFrame(i + 1)}
                 >
                   <b>{i + 1}</b>
-                  <FramePreview img={imageEl} rect={rects[i]} maxSide={80} />
+                  <FramePreview img={imageEl} rect={rects[i]} maxSide={80} center={app.autoCenterFrames} />
                 </div>
               ))}
             </div>
@@ -395,98 +396,86 @@ function GuidesPanel() {
     <aside className="panel cut-panel" data-mode={app.tab}>
       <div id="panel-guides" className="panel-block">
         <div className="cut-panel-head">
-          <h3>Guias de recorte</h3>
-          <label className="switch-mini">
-            <span>Células iguais</span>
+          <h3 title={locked ? "Grade uniforme. Arraste para alinhar." : "Modo livre. Cada guia move-se à parte."}>
+            Guias
+          </h3>
+          <label className="switch-mini" title="Células iguais">
+            <span>Iguais</span>
             <input type="checkbox" checked={locked} onChange={(e) => app.setLockUniformGrid(e.target.checked)} />
           </label>
         </div>
 
         <div className="cut-panel-body">
-          <p className="cut-note">
-            {locked ? "Grade uniforme. Arraste para alinhar o personagem." : "Modo livre. Cada guia move-se à parte."}
-          </p>
-
-          <div className="cut-section">
-            <span className="cut-kicker">Grade</span>
+          <div className="cut-grid">
             <div className="field compact stat">
               <span>Célula</span>
               <strong>
-                {app.lockedCell.w} × {app.lockedCell.h} px
+                {app.lockedCell.w}×{app.lockedCell.h}
               </strong>
             </div>
-            <div className="cut-pair">
-              <div className="field compact">
-                <span>Origem X</span>
-                <input
-                  key={"ox-" + app.gridOrigin.x}
-                  defaultValue={app.gridOrigin.x + " px"}
-                  disabled={!locked}
-                  onBlur={(e) => {
-                    const n = parseFloat(e.target.value);
-                    if (Number.isNaN(n)) return;
-                    app.setGridOrigin("v", n);
-                  }}
-                />
-              </div>
-              <div className="field compact">
-                <span>Origem Y</span>
-                <input
-                  key={"oy-" + app.gridOrigin.y}
-                  defaultValue={app.gridOrigin.y + " px"}
-                  disabled={!locked}
-                  onBlur={(e) => {
-                    const n = parseFloat(e.target.value);
-                    if (Number.isNaN(n)) return;
-                    app.setGridOrigin("h", n);
-                  }}
-                />
-              </div>
+            <div className="field compact">
+              <span>Folga</span>
+              <input
+                defaultValue={app.safeMarginPx}
+                onBlur={(e) => app.setSafeMargin(Math.max(4, Math.round(parseFloat(e.target.value) || 4)))}
+              />
             </div>
-            <div className="cut-pair">
-              <div className="row compact">
-                <label>Colunas</label>
-                <div className="counter">
-                  <button type="button" onClick={() => app.setCols(app.cols - 1)}>
-                    −
-                  </button>
-                  <span>{app.cols}</span>
-                  <button type="button" onClick={() => app.setCols(app.cols + 1)}>
-                    +
-                  </button>
-                </div>
-              </div>
-              <div className="row compact">
-                <label>Linhas</label>
-                <div className="counter">
-                  <button type="button" onClick={() => app.setRows(app.rows - 1)}>
-                    −
-                  </button>
-                  <span>{app.rows}</span>
-                  <button type="button" onClick={() => app.setRows(app.rows + 1)}>
-                    +
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {!locked ? (
-            <div className="cut-section">
-              <span className="cut-kicker">Modo livre</span>
-              <div className="seg">
-                <button type="button" className={app.addAxis === "v" ? "active" : ""} onClick={() => app.setAddAxis("v")}>
-                  Colunas
-                </button>
-                <button type="button" className={app.addAxis === "h" ? "active" : ""} onClick={() => app.setAddAxis("h")}>
-                  Linhas
-                </button>
-              </div>
-              <div className="cut-pair">
+            <label className="switch-mini cut-center" title="Recentrar a arte em cada célula na faixa e na exportação">
+              <span>Centrar</span>
+              <input
+                type="checkbox"
+                checked={app.autoCenterFrames}
+                onChange={(e) => app.setAutoCenterFrames(e.target.checked)}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn tiny"
+              title="Deslocar a grade pela mediana do desvio da arte"
+              onClick={app.alignGridFromFrames}
+            >
+              Alinhar
+            </button>
+            <div className="field compact cut-span cut-delta" title="Desvio mediano da arte ao centro da célula">
+              <span>
+                {app.alignOffset ? formatAlignDelta(app.alignOffset.dx, app.alignOffset.dy) : "Δ —"}
+              </span>
+            </div>
+
+            {locked ? (
+              <>
                 <div className="field compact">
-                  <span>Guia</span>
+                  <span>X</span>
                   <input
-                    value={px + " px"}
+                    key={"ox-" + app.gridOrigin.x}
+                    defaultValue={app.gridOrigin.x}
+                    onBlur={(e) => {
+                      const n = parseFloat(e.target.value);
+                      if (Number.isNaN(n)) return;
+                      app.setGridOrigin("v", n);
+                    }}
+                  />
+                </div>
+                <div className="field compact">
+                  <span>Y</span>
+                  <input
+                    key={"oy-" + app.gridOrigin.y}
+                    defaultValue={app.gridOrigin.y}
+                    onBlur={(e) => {
+                      const n = parseFloat(e.target.value);
+                      if (Number.isNaN(n)) return;
+                      app.setGridOrigin("h", n);
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="field compact">
+                  <span>{g?.axis === "h" ? "Y" : "X"}</span>
+                  <input
+                    value={String(px)}
                     onChange={(e) => {
                       const n = parseFloat(e.target.value);
                       if (!g || Number.isNaN(n)) return;
@@ -495,53 +484,63 @@ function GuidesPanel() {
                     }}
                   />
                 </div>
-                <div className="field compact">
-                  <span>Folga</span>
-                  <input
-                    defaultValue={app.safeMarginPx + " px"}
-                    onBlur={(e) => app.setSafeMargin(Math.max(4, Math.round(parseFloat(e.target.value) || 4)))}
-                  />
-                </div>
-              </div>
-              <div className="cut-pair">
-                <div className="field compact">
-                  <span>Gap X</span>
-                  <input defaultValue={app.gapX + " px"} onBlur={(e) => app.setGapX(Math.max(0, parseFloat(e.target.value) || 0))} />
-                </div>
-                <div className="field compact">
-                  <span>Gap Y</span>
-                  <input defaultValue={app.gapY + " px"} onBlur={(e) => app.setGapY(Math.max(0, parseFloat(e.target.value) || 0))} />
-                </div>
-              </div>
-              <div className="cut-tools">
-                <button type="button" className="btn tiny" onClick={app.addGuide}>
-                  + Guia
-                </button>
-                <button type="button" className="btn tiny danger" onClick={app.removeGuide}>
-                  Remover
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="cut-section">
-              <span className="cut-kicker">Aparência</span>
-              <div className="cut-pair">
-                <div className="field compact">
-                  <span>Folga</span>
-                  <input
-                    defaultValue={app.safeMarginPx + " px"}
-                    onBlur={(e) => app.setSafeMargin(Math.max(4, Math.round(parseFloat(e.target.value) || 4)))}
-                  />
-                </div>
                 <div className="field compact cut-color">
                   <span>Cor</span>
-                  <div className="colorchip" style={{ background: app.guideColor }}>
+                  <div className="colorchip" style={{ background: app.guideColor }} title={app.guideColor}>
                     <input type="color" value={app.guideColor} onChange={(e) => app.setGuideColor(e.target.value)} />
                   </div>
                 </div>
+              </>
+            )}
+
+            <div className="row compact">
+              <label>Cols</label>
+              <div className="counter">
+                <button type="button" onClick={() => app.setCols(app.cols - 1)}>
+                  −
+                </button>
+                <span>{app.cols}</span>
+                <button type="button" onClick={() => app.setCols(app.cols + 1)}>
+                  +
+                </button>
               </div>
+            </div>
+            <div className="row compact">
+              <label>Lins</label>
+              <div className="counter">
+                <button type="button" onClick={() => app.setRows(app.rows - 1)}>
+                  −
+                </button>
+                <span>{app.rows}</span>
+                <button type="button" onClick={() => app.setRows(app.rows + 1)}>
+                  +
+                </button>
+              </div>
+            </div>
+
+            {locked ? (
+              <div className="field compact cut-color">
+                <span>Cor</span>
+                <div className="colorchip" style={{ background: app.guideColor }} title={app.guideColor}>
+                  <input type="color" value={app.guideColor} onChange={(e) => app.setGuideColor(e.target.value)} />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="field compact">
+                  <span>Gap X</span>
+                  <input defaultValue={app.gapX} onBlur={(e) => app.setGapX(Math.max(0, parseFloat(e.target.value) || 0))} />
+                </div>
+                <div className="field compact">
+                  <span>Gap Y</span>
+                  <input defaultValue={app.gapY} onBlur={(e) => app.setGapY(Math.max(0, parseFloat(e.target.value) || 0))} />
+                </div>
+              </>
+            )}
+
+            {locked ? (
               <label className="cut-range">
-                <span>Espessura</span>
+                <span>{app.guideThickness}px</span>
                 <input
                   className="range"
                   type="range"
@@ -551,70 +550,82 @@ function GuidesPanel() {
                   onChange={(e) => app.setGuideThickness(Number(e.target.value))}
                 />
               </label>
+            ) : (
+              <div className="seg cut-span">
+                <button type="button" className={app.addAxis === "v" ? "active" : ""} onClick={() => app.setAddAxis("v")}>
+                  Cols
+                </button>
+                <button type="button" className={app.addAxis === "h" ? "active" : ""} onClick={() => app.setAddAxis("h")}>
+                  Lins
+                </button>
+              </div>
+            )}
+
+            {!locked ? (
+              <>
+                <label className="cut-range cut-span">
+                  <span>{app.guideThickness}px</span>
+                  <input
+                    className="range"
+                    type="range"
+                    min={1}
+                    max={6}
+                    value={app.guideThickness}
+                    onChange={(e) => app.setGuideThickness(Number(e.target.value))}
+                  />
+                </label>
+                <button type="button" className="btn tiny" onClick={app.addGuide}>
+                  + Guia
+                </button>
+                <button type="button" className="btn tiny danger" onClick={app.removeGuide}>
+                  Apagar
+                </button>
+              </>
+            ) : null}
+
+            <div className="cut-tools cut-span">
+              <button
+                type="button"
+                className="btn tiny"
+                onClick={app.detectGrid}
+                title={locked ? "Estimar origem" : "Detectar grade"}
+              >
+                {locked ? "Origem" : "Auto"}
+              </button>
+              <button type="button" className="btn tiny" onClick={() => app.applyPreset()} title="Aplicar preset do prompt">
+                Preset
+              </button>
+              <button type="button" className="btn tiny" onClick={app.resetGuides} title="Redefinir guias">
+                Reset
+              </button>
             </div>
-          )}
-
-          {!locked ? (
-            <label className="cut-range">
-              <span>Espessura · {app.guideColor.toUpperCase()}</span>
-              <span className="cut-range-row">
-                <div className="colorchip" style={{ background: app.guideColor }}>
-                  <input type="color" value={app.guideColor} onChange={(e) => app.setGuideColor(e.target.value)} />
-                </div>
-                <input
-                  className="range"
-                  type="range"
-                  min={1}
-                  max={6}
-                  value={app.guideThickness}
-                  onChange={(e) => app.setGuideThickness(Number(e.target.value))}
-                />
-              </span>
-            </label>
-          ) : null}
-
-          <div className="cut-tools">
-            <button type="button" className="btn tiny" onClick={app.detectGrid} title={locked ? "Estimar origem" : "Detectar grade"}>
-              {locked ? "Origem" : "Detectar"}
-            </button>
-            <button type="button" className="btn tiny" onClick={() => app.applyPreset()} title="Aplicar preset do prompt">
-              Preset
-            </button>
-            <button type="button" className="btn tiny" onClick={app.resetGuides} title="Redefinir guias">
-              Redefinir
-            </button>
           </div>
         </div>
 
         <div className="cut-panel-foot">
-          <button type="button" className="btn primary" onClick={app.applyGuides}>
-            {locked ? "Aplicar tamanho do prompt" : "Aplicar guias"}
-          </button>
-          <div className="cut-nudge">
-            <div className="cut-nudge-meta">
-              <strong>{locked ? "Deslocar grade" : g?.axis === "h" ? "Guia horizontal" : "Guia vertical"}</strong>
-              <span>{locked ? app.cols + "×" + app.rows : px + " px"}</span>
-            </div>
-            <div className="cut-nudge-btns">
-              <button type="button" className="btn tiny" onClick={() => app.nudgeGuide(-1)}>
-                −1 px
-              </button>
-              <button type="button" className="btn tiny" onClick={() => app.nudgeGuide(1)}>
-                +1 px
-              </button>
-            </div>
-            <p className="cut-keys">{locked ? "Setas ou [ ] · Alt duplica" : "Setas / [ ] · Delete · Alt duplica"}</p>
+          <div className="cut-nudge-row">
+            <button type="button" className="btn tiny" title="−1 px" onClick={() => app.nudgeGuide(-1)}>
+              −1
+            </button>
+            <button type="button" className="btn primary" onClick={app.applyGuides}>
+              Aplicar
+            </button>
+            <button type="button" className="btn tiny" title="+1 px" onClick={() => app.nudgeGuide(1)}>
+              +1
+            </button>
           </div>
+          <p className="cut-keys" title={locked ? "Setas ou [ ] · Alt duplica" : "Setas / [ ] · Delete · Alt duplica"}>
+            {locked ? app.cols + "×" + app.rows : (g?.axis === "h" ? "H" : "V") + " " + px + "px"}
+          </p>
         </div>
       </div>
 
       <div id="panel-view" className="panel-block">
         <div className="cut-panel-head">
-          <h3>Visualização</h3>
+          <h3>Vista</h3>
         </div>
         <div className="cut-panel-body">
-          <p className="cut-note">Guias ocultas para inspecionar os frames.</p>
-          <div className="cut-pair">
+          <div className="cut-grid">
             <div className="field compact">
               <span>Frames</span>
               <strong>{app.cols * app.rows}</strong>
@@ -622,53 +633,54 @@ function GuidesPanel() {
             <div className="field compact">
               <span>Grade</span>
               <strong>
-                {app.cols} × {app.rows}
+                {app.cols}×{app.rows}
               </strong>
             </div>
-          </div>
-          <div className="field compact">
-            <span>Selecionado</span>
-            <strong>Frame {app.selectedFrame}</strong>
+            <div className="field compact cut-span">
+              <span>Sel.</span>
+              <strong>#{app.selectedFrame}</strong>
+            </div>
           </div>
         </div>
         <div className="cut-panel-foot">
           <button type="button" className="btn primary" onClick={() => app.setTab("guides")}>
-            Mostrar guias
+            Guias
           </button>
         </div>
       </div>
 
       <div id="panel-adjust" className="panel-block">
         <div className="cut-panel-head">
-          <h3>Ajustes de preview</h3>
+          <h3>Ajustes</h3>
         </div>
         <div className="cut-panel-body">
-          <label className="cut-range">
-            <span>Brilho</span>
-            <input className="range" type="range" min={50} max={150} value={app.brightness} onChange={(e) => app.setBrightness(Number(e.target.value))} />
-          </label>
-          <label className="cut-range">
-            <span>Contraste</span>
-            <input className="range" type="range" min={50} max={150} value={app.contrast} onChange={(e) => app.setContrast(Number(e.target.value))} />
-          </label>
-          <label className="cut-range">
-            <span>Opacidade das células</span>
-            <input className="range" type="range" min={20} max={100} value={app.cellOpacity} onChange={(e) => app.setCellOpacity(Number(e.target.value))} />
-          </label>
+          <div className="cut-grid">
+            <label className="cut-range cut-span">
+              <span>Brilho</span>
+              <input className="range" type="range" min={50} max={150} value={app.brightness} onChange={(e) => app.setBrightness(Number(e.target.value))} />
+            </label>
+            <label className="cut-range cut-span">
+              <span>Contraste</span>
+              <input className="range" type="range" min={50} max={150} value={app.contrast} onChange={(e) => app.setContrast(Number(e.target.value))} />
+            </label>
+            <label className="cut-range cut-span">
+              <span>Células</span>
+              <input className="range" type="range" min={20} max={100} value={app.cellOpacity} onChange={(e) => app.setCellOpacity(Number(e.target.value))} />
+            </label>
+          </div>
         </div>
         <div className="cut-panel-foot">
           <button
             type="button"
-            className="btn"
+            className="btn tiny"
             onClick={() => {
               app.setBrightness(100);
               app.setContrast(100);
               app.setCellOpacity(100);
             }}
           >
-            Redefinir ajustes
+            Reset
           </button>
-          <p className="cut-keys">Só afetam a pré-visualização.</p>
         </div>
       </div>
     </aside>

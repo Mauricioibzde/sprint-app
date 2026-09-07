@@ -14,8 +14,8 @@ export function AnimateScreen() {
 
   useEffect(() => {
     if (!canvasRef.current) return;
-    paintRectPreview(canvasRef.current, app.imageEl, current, 512);
-  }, [app.imageEl, current]);
+    paintRectPreview(canvasRef.current, app.imageEl, current, 512, app.autoCenterFrames);
+  }, [app.imageEl, current, app.autoCenterFrames]);
 
   if (!app.hasImage) {
     return (
@@ -132,7 +132,7 @@ export function AnimateScreen() {
                         app.pickExport(frame.index);
                       }}
                     />
-                    <FramePreview img={app.imageEl} rect={frame} maxSide={56} />
+                    <FramePreview img={app.imageEl} rect={frame} maxSide={56} center={app.autoCenterFrames} />
                     <span>{frame.index}</span>
                   </button>
                 );

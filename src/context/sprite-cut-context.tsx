@@ -47,6 +47,7 @@ import {
   uid
 } from "@/lib/guides";
 import { detectGenericGrid, protectCutsFromContent, readImageData } from "@/lib/grid-detect";
+import { frameOffsets, medianOffset, signedPx } from "@/lib/frame-align";
 import { blobToDataUrl, buildAnimatedIndexHtml, cropFramePng } from "@/lib/export";
 import { blobToUint8, buildZip, downloadBlob } from "@/lib/zip";
 import { clearLearnMemory, learnMemory, learnStatusText, mixLearn, upsertLearn } from "@/lib/learn";
@@ -157,6 +158,10 @@ type Ctx = {
   lockedCell: { w: number; h: number };
   gridOrigin: { x: number; y: number };
   setGridOrigin: (axis: "v" | "h", px: number) => void;
+  autoCenterFrames: boolean;
+  setAutoCenterFrames: (v: boolean) => void;
+  alignOffset: { dx: number; dy: number } | null;
+  alignGridFromFrames: () => void;
   history: { at: string; text: string }[];
   toast: Toast | null;
   openImage: (file: File) => void;
@@ -229,6 +234,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
   const [gapY, setGapY] = useState(0);
   const [safeMarginPx, setSafeMarginPx] = useState(preset.gutter);
   const [lockUniformGrid, setLockUniformGridState] = useState(true);
+  const [autoCenterFrames, setAutoCenterFrames] = useState(true);
   const [guides, setGuides] = useState<Guide[]>(() => {
     const built = buildLockedGrid({
       originX: preset.labelW,
@@ -294,6 +300,26 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
   const folderSupported = canUseFolderPicker();
 
   const rects = useMemo(() => frameRects(guides, imageW, imageH), [guides, imageW, imageH]);
+  const [sheetPixels, setSheetPixels] = useState<{ data: Uint8ClampedArray; w: number; h: number } | null>(null);
+
+  useEffect(() => {
+    if (!imageEl || !hasImage) {
+      setSheetPixels(null);
+      return;
+    }
+    try {
+      const w = imageEl.naturalWidth || imageW;
+      const h = imageEl.naturalHeight || imageH;
+      setSheetPixels({ data: readImageData(imageEl, w, h), w, h });
+    } catch {
+      setSheetPixels(null);
+    }
+  }, [imageEl, hasImage, imageW, imageH]);
+
+  const alignOffset = useMemo(() => {
+    if (!sheetPixels || !rects.length) return null;
+    return medianOffset(frameOffsets(sheetPixels.data, sheetPixels.w, sheetPixels.h, rects));
+  }, [sheetPixels, rects]);
 
   const clipFrames = useMemo(() => {
     if (!rects.length) return [];
@@ -627,6 +653,78 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
     pushHistory
   ]);
 
+  const alignGridFromFrames = useCallback(() => {
+    if (!imageEl || !hasImage) {
+      showToast("Abra uma spritesheet primeiro.", "warn");
+      return;
+    }
+    const w = imageEl.naturalWidth || imageW;
+    const h = imageEl.naturalHeight || imageH;
+    if (rects.length < 1) {
+      showToast("Defina as guias antes de alinhar.", "warn");
+      return;
+    }
+    let data: Uint8ClampedArray;
+    try {
+      data = sheetPixels && sheetPixels.w === w && sheetPixels.h === h ? sheetPixels.data : readImageData(imageEl, w, h);
+    } catch {
+      showToast("Não foi possível ler a imagem.", "warn");
+      return;
+    }
+    const med = medianOffset(frameOffsets(data, w, h, rects));
+    if (!med) {
+      showToast("Nenhuma arte nas células para alinhar.", "warn");
+      return;
+    }
+    const pad = Math.max(safeMarginPx, minContentPadForImage(w, h));
+    const { defaultOriginX, defaultOriginY, cellW, cellH } = promptCellMetrics();
+    try {
+      if (lockUniformGrid) {
+        const origin = lockedGridOrigin(guides, w, h);
+        const nextX = (origin.originX ?? defaultOriginX) - med.dx;
+        const nextY = (origin.originY ?? defaultOriginY) - med.dy;
+        const built = buildLockedGrid({
+          originX: nextX,
+          originY: nextY,
+          cellW,
+          cellH,
+          cols,
+          rows,
+          imageW: w,
+          imageH: h
+        });
+        const protectedCuts = protectCutsFromContent(data, w, h, built.xCuts, built.yCuts, pad);
+        applyLockedGrid(protectedCuts.xCuts[0] ?? nextX, protectedCuts.yCuts[0] ?? nextY, cols, rows);
+      } else {
+        const xs = percents(guides, "v").map((p) => Math.round((p / 100) * w) - med.dx);
+        const ys = percents(guides, "h").map((p) => Math.round((p / 100) * h) - med.dy);
+        const protectedCuts = protectCutsFromContent(data, w, h, xs, ys, pad);
+        applyCuts(protectedCuts.xCuts, protectedCuts.yCuts, w, h);
+      }
+      pushHistory("Grade alinhada " + signedPx(med.dx) + "×" + signedPx(med.dy));
+      showToast("Grade alinhada · Δx " + signedPx(med.dx) + "px Δy " + signedPx(med.dy) + "px", "ok");
+    } catch {
+      showToast("Não foi possível alinhar a grade.", "warn");
+    }
+  }, [
+    imageEl,
+    hasImage,
+    imageW,
+    imageH,
+    rects,
+    sheetPixels,
+    safeMarginPx,
+    promptCellMetrics,
+    lockUniformGrid,
+    guides,
+    cols,
+    rows,
+    applyLockedGrid,
+    applyCuts,
+    pushHistory,
+    showToast
+  ]);
+
   useEffect(() => {
     if (!hasImage || !imageEl) return;
     if (skipDetectRef.current) {
@@ -651,7 +749,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       const files: { name: string; data: Uint8Array }[] = [];
       for (let i = 0; i < rects.length; i++) {
         const rect = rects[i];
-        const blob = await cropFramePng(imageEl, rect);
+        const blob = await cropFramePng(imageEl, rect, autoCenterFrames);
         const data = await blobToUint8(blob);
         files.push({
           name: frameZipPath(rowLabelName(promptParams, rect.row - 1), rect.col),
@@ -666,7 +764,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
         rows,
         frames: rects.length,
         contentPadPx: safeMarginPx,
-        cropMode: "full-cell",
+        cropMode: autoCenterFrames ? "centered-bbox" : "full-cell",
         guides: {
           x: percents(guides, "v").map((p) => Math.round((p / 100) * imageW)),
           y: percents(guides, "h").map((p) => Math.round((p / 100) * imageH))
@@ -687,7 +785,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       console.error(err);
       showToast("Falha ao exportar ZIP. Tente outra imagem/navegador.", "warn");
     }
-  }, [hasImage, imageEl, rects, fileName, imageW, imageH, cols, rows, safeMarginPx, guides, promptParams, pushHistory, showToast]);
+  }, [hasImage, imageEl, rects, fileName, imageW, imageH, cols, rows, safeMarginPx, guides, promptParams, autoCenterFrames, pushHistory, showToast]);
 
   const exportHtml = useCallback(async () => {
     if (!hasImage || !imageEl) {
@@ -703,7 +801,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
     try {
       const frames = [];
       for (const rect of picked) {
-        const blob = await cropFramePng(imageEl, rect);
+        const blob = await cropFramePng(imageEl, rect, autoCenterFrames);
         const src = await blobToDataUrl(blob);
         frames.push({ src, w: rect.w, h: rect.h });
       }
@@ -720,7 +818,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       console.error(err);
       showToast("Falha ao gerar HTML animado.", "warn");
     }
-  }, [hasImage, imageEl, clipFrames, anim, fileName, clipTitle, pushHistory, showToast]);
+  }, [hasImage, imageEl, clipFrames, anim, fileName, clipTitle, autoCenterFrames, pushHistory, showToast]);
 
   const exportBatch = useCallback(async () => {
     if (!batchFiles.length) {
@@ -741,7 +839,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
           const localRects = frameRects(localGuides, w, h);
           const files: { name: string; data: Uint8Array }[] = [];
           for (const rect of localRects) {
-            const blob = await cropFramePng(img, rect);
+            const blob = await cropFramePng(img, rect, autoCenterFrames);
             files.push({
               name: frameZipPath(rowLabelName(promptParams, rect.row - 1), rect.col),
               data: await blobToUint8(blob)
@@ -757,7 +855,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
     }
     showToast("Lote exportado: " + batchFiles.length + " ZIP(s)", "ok");
     pushHistory("Lote exportado: " + batchFiles.length + " arquivos");
-  }, [batchFiles, promptParams, showToast, pushHistory]);
+  }, [batchFiles, promptParams, autoCenterFrames, showToast, pushHistory]);
 
   useEffect(() => {
     const key = clipFrames.map((f) => f.index).join(",");
@@ -953,6 +1051,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
         safeMarginPx,
         guideColor,
         guideThickness,
+        autoCenterFrames,
         anim: { fps: anim.fps, loop: anim.loop, mode: anim.mode, row: anim.row }
       };
 
@@ -1000,6 +1099,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       safeMarginPx,
       guideColor,
       guideThickness,
+      autoCenterFrames,
       anim.fps,
       anim.loop,
       anim.mode,
@@ -1030,6 +1130,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
         setSafeMarginPx(project.safeMarginPx);
         setGuideColor(project.guideColor);
         setGuideThickness(project.guideThickness);
+        setAutoCenterFrames(project.autoCenterFrames !== false);
         setAnimState((a) => ({
           ...a,
           playing: false,
@@ -1136,6 +1237,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       setCurrentSlug(null);
       setCurrentCreatedAt(null);
       setProjectName(opts?.name || "");
+      setAutoCenterFrames(true);
       applyPreset({ toast: false, switchScreen: false, params: next });
       setScreenState("about");
       pushHistory(opts?.name ? "Modelo: " + opts.name : "Novo projeto");
@@ -1394,6 +1496,10 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       const nextY = axis === "h" ? Math.round(px) : origin.originY ?? defaultOriginY;
       applyLockedGrid(nextX, nextY, cols, rows);
     },
+    autoCenterFrames,
+    setAutoCenterFrames,
+    alignOffset: alignOffset ? { dx: alignOffset.dx, dy: alignOffset.dy } : null,
+    alignGridFromFrames,
     history,
     toast,
     openImage,

@@ -1,6 +1,7 @@
 import type { FrameRect } from "@/types";
+import { drawAlignedFrame } from "@/lib/frame-align";
 
-export function cropFramePng(img: CanvasImageSource, rect: FrameRect): Promise<Blob> {
+export function cropFramePng(img: CanvasImageSource, rect: FrameRect, center = false): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = rect.w;
   canvas.height = rect.h;
@@ -8,7 +9,8 @@ export function cropFramePng(img: CanvasImageSource, rect: FrameRect): Promise<B
   if (!ctx) return Promise.reject(new Error("Falha ao gerar PNG"));
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, rect.w, rect.h);
-  ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+  if (center) drawAlignedFrame(ctx, img, rect, rect.w, rect.h);
+  else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
   return new Promise((resolve, reject) => {
     canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Falha ao gerar PNG"))), "image/png");
   });
@@ -27,7 +29,8 @@ export function paintRectPreview(
   targetCanvas: HTMLCanvasElement,
   img: CanvasImageSource | null,
   rect: FrameRect | undefined,
-  maxSide: number
+  maxSide: number,
+  center = false
 ) {
   const ctx = targetCanvas.getContext("2d");
   if (!ctx) return;
@@ -39,7 +42,8 @@ export function paintRectPreview(
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
   if (!img || !rect) return;
-  ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h, 0, 0, targetCanvas.width, targetCanvas.height);
+  if (center) drawAlignedFrame(ctx, img, rect, targetCanvas.width, targetCanvas.height);
+  else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h, 0, 0, targetCanvas.width, targetCanvas.height);
 }
 
 function escapeHtml(s: string) {
