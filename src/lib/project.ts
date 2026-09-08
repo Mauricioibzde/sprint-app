@@ -102,7 +102,7 @@ export function parseProject(raw: unknown): SpriteProject | null {
     guideThickness: Math.max(1, Number(src.guideThickness) || 2),
     autoCenterFrames: src.autoCenterFrames !== false,
     anim: {
-      fps: Math.max(1, Number(src.anim?.fps) || 8),
+      fps: Math.max(1, Number(src.anim?.fps) || 12),
       loop: src.anim?.loop !== false,
       mode: src.anim?.mode === "all" || src.anim?.mode === "range" ? src.anim.mode : "row",
       row: Math.max(0, Number(src.anim?.row) || 0)

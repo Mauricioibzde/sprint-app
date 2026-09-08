@@ -121,7 +121,7 @@ export function buildTestPrompt(p: PromptParams): string {
     "\n\n" +
     "**Animações por linha (" +
     p.cols +
-    " frames cada, da esquerda para a direita).** Os nomes abaixo são só instrução de pose — **não os escreva na PNG:**\n\n" +
+    " frames cada, da esquerda para a direita, com transições pequenas e contínuas entre poses para um ciclo fluido).** Os nomes abaixo são só instrução de pose — **não os escreva na PNG:**\n\n" +
     animLines +
     "\n" +
     (extra ? "\n" + extra + "\n" : "") +

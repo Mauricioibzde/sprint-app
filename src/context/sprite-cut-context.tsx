@@ -268,7 +268,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
   const [learnStatus, setLearnStatus] = useState("Memória: —");
   const [anim, setAnimState] = useState<AnimState>({
     playing: false,
-    fps: 8,
+    fps: 12,
     loop: true,
     mode: "row",
     row: 0,
@@ -284,7 +284,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
   const batchInputRef = useRef<HTMLInputElement | null>(null);
   const toastTimer = useRef<number | null>(null);
   const learnTimer = useRef<number | null>(null);
-  const playTimer = useRef<number | null>(null);
+  const playRaf = useRef<number | null>(null);
   const clipKeyRef = useRef("");
   const skipDetectRef = useRef(false);
   const imageFileRef = useRef<File | Blob | null>(null);
@@ -901,27 +901,42 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!anim.playing) {
-      if (playTimer.current) window.clearTimeout(playTimer.current);
+      if (playRaf.current) window.cancelAnimationFrame(playRaf.current);
+      playRaf.current = null;
       return;
     }
     if (!clipFrames.length) {
       setAnimState((a) => ({ ...a, playing: false }));
       return;
     }
-    playTimer.current = window.setTimeout(() => {
-      setAnimState((a) => {
-        let next = a.clipIndex + 1;
-        if (next >= clipFrames.length) {
-          if (!a.loop) return { ...a, playing: false, clipIndex: clipFrames.length - 1 };
-          next = 0;
-        }
-        return { ...a, clipIndex: next };
-      });
-    }, Math.max(16, 1000 / Math.max(1, anim.fps)));
-    return () => {
-      if (playTimer.current) window.clearTimeout(playTimer.current);
+    const frameMs = 1000 / Math.max(1, anim.fps);
+    let last = performance.now();
+    let acc = 0;
+    const tick = (now: number) => {
+      const dt = Math.min(64, now - last);
+      last = now;
+      acc += dt;
+      if (acc >= frameMs) {
+        acc -= frameMs;
+        if (acc > frameMs) acc = 0;
+        setAnimState((a) => {
+          if (!a.playing) return a;
+          let next = a.clipIndex + 1;
+          if (next >= clipFrames.length) {
+            if (!a.loop) return { ...a, playing: false, clipIndex: Math.max(0, clipFrames.length - 1) };
+            next = 0;
+          }
+          return { ...a, clipIndex: next };
+        });
+      }
+      playRaf.current = window.requestAnimationFrame(tick);
     };
-  }, [anim.playing, anim.clipIndex, anim.fps, anim.loop, clipFrames.length]);
+    playRaf.current = window.requestAnimationFrame(tick);
+    return () => {
+      if (playRaf.current) window.cancelAnimationFrame(playRaf.current);
+      playRaf.current = null;
+    };
+  }, [anim.playing, anim.fps, anim.loop, clipFrames.length]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--guide", guideColor);

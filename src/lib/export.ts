@@ -37,13 +37,15 @@ export function paintRectPreview(
   const w = rect?.w || 64;
   const h = rect?.h || 64;
   const scale = Math.min(maxSide / w, maxSide / h, 1);
-  targetCanvas.width = Math.max(1, Math.round(w * scale));
-  targetCanvas.height = Math.max(1, Math.round(h * scale));
+  const destW = Math.max(1, Math.round(w * scale));
+  const destH = Math.max(1, Math.round(h * scale));
+  if (targetCanvas.width !== destW) targetCanvas.width = destW;
+  if (targetCanvas.height !== destH) targetCanvas.height = destH;
   ctx.imageSmoothingEnabled = false;
-  ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+  ctx.clearRect(0, 0, destW, destH);
   if (!img || !rect) return;
-  if (center) drawAlignedFrame(ctx, img, rect, targetCanvas.width, targetCanvas.height);
-  else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h, 0, 0, targetCanvas.width, targetCanvas.height);
+  if (center) drawAlignedFrame(ctx, img, rect, destW, destH);
+  else ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h, 0, 0, destW, destH);
 }
 
 function escapeHtml(s: string) {
@@ -76,7 +78,7 @@ export function buildAnimatedIndexHtml(opts: {
 <style>
   html,body{margin:0;padding:0;background:transparent}
   body{display:inline-block;line-height:0}
-  img{
+  canvas{
     display:block;width:${w}px;height:${h}px;
     image-rendering:pixelated;image-rendering:crisp-edges;
     background:transparent;user-select:none;pointer-events:none
@@ -84,20 +86,40 @@ export function buildAnimatedIndexHtml(opts: {
 </style>
 </head>
 <body>
-<img id="s" width="${w}" height="${h}" alt="" />
+<canvas id="s" width="${w}" height="${h}" aria-label=""></canvas>
 <script>
 (function(){
   var F=${srcJson},i=0,fps=${Math.max(1, opts.fps | 0)},loop=${opts.loop ? "true" : "false"};
   var el=document.getElementById('s');
-  function draw(){ el.src=F[i]; }
-  function tick(){
-    i++;
-    if(i>=F.length){ if(!loop){ i=F.length-1; draw(); return; } i=0; }
-    draw();
-    setTimeout(tick,1000/fps);
+  var ctx=el.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+  var imgs=F.map(function(src){ var im=new Image(); im.src=src; return im; });
+  function draw(){
+    var im=imgs[i];
+    if(!im||!im.complete||!im.naturalWidth) return;
+    ctx.clearRect(0,0,el.width,el.height);
+    ctx.drawImage(im,0,0,el.width,el.height);
   }
-  draw();
-  if(F.length>1) setTimeout(tick,1000/fps);
+  var last=0,frameMs=1000/Math.max(1,fps),started=false;
+  function tick(now){
+    if(!last) last=now;
+    var acc=now-last;
+    if(acc>=frameMs){
+      last=now-(acc%frameMs);
+      i++;
+      if(i>=imgs.length){ if(!loop){ i=imgs.length-1; draw(); return; } i=0; }
+      draw();
+    }
+    requestAnimationFrame(tick);
+  }
+  function start(){
+    if(started) return;
+    started=true;
+    draw();
+    if(imgs.length>1) requestAnimationFrame(tick);
+  }
+  imgs[0].onload=start;
+  if(imgs[0].complete) start();
 })();
 ${closeScript}
 ${closeBody}

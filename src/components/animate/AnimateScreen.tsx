@@ -7,15 +7,40 @@ import { paintRectPreview } from "@/lib/export";
 import { rowLabelName } from "@/lib/prompt";
 import type { AnimMode } from "@/types";
 
+function blitFrame(dest: HTMLCanvasElement, src: HTMLCanvasElement) {
+  const ctx = dest.getContext("2d");
+  if (!ctx) return;
+  if (dest.width !== src.width) dest.width = src.width;
+  if (dest.height !== src.height) dest.height = src.height;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, dest.width, dest.height);
+  ctx.drawImage(src, 0, 0);
+}
+
 export function AnimateScreen() {
   const app = useSpriteCut();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cacheRef = useRef<HTMLCanvasElement[]>([]);
   const current = app.clipFrames[app.anim.clipIndex];
 
   useEffect(() => {
-    if (!canvasRef.current) return;
-    paintRectPreview(canvasRef.current, app.imageEl, current, 512, app.autoCenterFrames);
-  }, [app.imageEl, current, app.autoCenterFrames]);
+    cacheRef.current = app.clipFrames.map((rect) => {
+      const c = document.createElement("canvas");
+      paintRectPreview(c, app.imageEl, rect, 512, app.autoCenterFrames);
+      return c;
+    });
+    const dest = canvasRef.current;
+    const src = cacheRef.current[app.anim.clipIndex];
+    if (dest && src) blitFrame(dest, src);
+    // clipIndex is read once after rebuilding the cache
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [app.imageEl, app.clipFrames, app.autoCenterFrames]);
+
+  useEffect(() => {
+    const dest = canvasRef.current;
+    const src = cacheRef.current[app.anim.clipIndex];
+    if (dest && src) blitFrame(dest, src);
+  }, [app.anim.clipIndex]);
 
   if (!app.hasImage) {
     return (
@@ -70,7 +95,7 @@ export function AnimateScreen() {
               <input
                 type="range"
                 min={1}
-                max={30}
+                max={48}
                 value={app.anim.fps}
                 style={{ width: 120 }}
                 onChange={(e) => app.setAnim({ fps: Number(e.target.value) })}
