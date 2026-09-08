@@ -49,7 +49,7 @@ const MOBILE_MORE: { screen: ScreenId; label: string; hint: string; icon: Lucide
   { screen: "settings", label: "Config", hint: "Preferências", icon: SlidersHorizontal }
 ];
 
-function TutorialDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function TutorialDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   if (!open) return null;
   return (
     <div className="tutorial-layer" role="dialog" aria-modal="true" aria-labelledby="tutorial-title">
@@ -374,7 +374,7 @@ export function TopBar() {
           )}
         </div>
       </div>
-      {screen !== "about" ? (
+      {screen !== "about" && screen !== "animate" ? (
         <div className="title desktop-title">
           <h2>{page.title}</h2>
           <p>{page.sub}</p>

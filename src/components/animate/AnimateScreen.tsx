@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, CircleHelp, Crop, FolderOpen, ImageIcon, Play } from "lucide-react";
 import { FramePreview } from "@/components/ui/FramePreview";
+import { TutorialDialog } from "@/components/shell/Sidebar";
 import { useSpriteCut } from "@/context/sprite-cut-context";
 import { paintRectPreview } from "@/lib/export";
 import { rowLabelName } from "@/lib/prompt";
@@ -17,10 +19,128 @@ function blitFrame(dest: HTMLCanvasElement, src: HTMLCanvasElement) {
   ctx.drawImage(src, 0, 0);
 }
 
+function PixelKnight({ pose = 0 }: { pose?: 0 | 1 | 2 }) {
+  const shift = pose === 1 ? 1 : pose === 2 ? 2 : 0;
+  return (
+    <svg className="anim-knight" viewBox="0 0 32 40" aria-hidden>
+      <g transform={`translate(${shift} 0)`}>
+        <rect x="18" y="1" width="3" height="5" fill="#ef4444" />
+        <rect x="10" y="3" width="12" height="3" fill="#eab308" />
+        <rect x="8" y="6" width="16" height="8" fill="#facc15" />
+        <rect x="10" y="9" width="12" height="3" fill="#0f172a" />
+        <rect x="11" y="10" width="4" height="1" fill="#38bdf8" />
+        <rect x="17" y="10" width="4" height="1" fill="#38bdf8" />
+        <rect x="10" y="14" width="12" height="11" fill="#ca8a04" />
+        <rect x="12" y="16" width="8" height="7" fill="#facc15" />
+        <rect x="14" y="18" width="4" height="3" fill="#b91c1c" />
+        <rect x="1" y="15" width="9" height="11" fill="#2563eb" />
+        <rect x="3" y="17" width="5" height="7" fill="#93c5fd" />
+        <rect x="2" y="20" width="7" height="2" fill="#1d4ed8" />
+        <rect x="23" y="12" width="3" height="16" fill="#e2e8f0" />
+        <rect x="22" y="10" width="5" height="3" fill="#f8fafc" />
+        <rect x="24" y="7" width="2" height="4" fill="#94a3b8" />
+        <rect x="9" y="25" width="5" height={pose === 2 ? 8 : 10} fill="#a16207" />
+        <rect x="18" y="25" width="5" height={pose === 1 ? 8 : 10} fill="#a16207" />
+        <rect x="8" y={pose === 2 ? 33 : 35} width="7" height="3" fill="#1e293b" />
+        <rect x="17" y={pose === 1 ? 33 : 35} width="7" height="3" fill="#1e293b" />
+      </g>
+    </svg>
+  );
+}
+
+function AnimateHead({ onHow }: { onHow: () => void }) {
+  return (
+    <div className="page-head anim-head">
+      <div>
+        <h2>Animar</h2>
+        <p>Pré-visualize cada linha e exporte HTML ou ZIP para o jogo.</p>
+      </div>
+      <button type="button" className="how-btn" onClick={onHow}>
+        <CircleHelp size={16} strokeWidth={1.75} />
+        Como funciona?
+      </button>
+    </div>
+  );
+}
+
+function AnimateEmpty({ onOpen, onBack }: { onOpen: () => void; onBack: () => void }) {
+  return (
+    <article className="anim-empty-card">
+      <div className="anim-empty-hero">
+        <div className="anim-empty-art" aria-hidden>
+          <span className="anim-empty-orbit anim-empty-orbit-a" />
+          <span className="anim-empty-orbit anim-empty-orbit-b" />
+          <span className="anim-empty-arrow" />
+          <div className="anim-empty-stack">
+            <div className="anim-empty-frame f1">
+              <PixelKnight pose={0} />
+            </div>
+            <div className="anim-empty-frame f2">
+              <PixelKnight pose={1} />
+            </div>
+            <div className="anim-empty-frame f3">
+              <PixelKnight pose={2} />
+              <span className="anim-empty-play">
+                <Play size={22} strokeWidth={2.4} fill="currentColor" />
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="anim-empty-copy">
+          <span className="anim-empty-badge">Quase lá!</span>
+          <h3>Ainda não há spritesheet nesta sessão</h3>
+          <p>
+            Gere uma PNG com o prompt e abra-a em Recortar. Depois cada linha (IDLE, WALK, …) vira um clip para
+            pré-visualizar e exportar.
+          </p>
+          <div className="anim-empty-actions">
+            <button type="button" className="btn primary" onClick={onOpen}>
+              <FolderOpen size={18} strokeWidth={1.75} /> Abrir PNG
+            </button>
+            <button type="button" className="btn ghost" onClick={onBack}>
+              <ArrowLeft size={16} strokeWidth={1.75} /> Voltar ao prompt
+            </button>
+          </div>
+        </div>
+      </div>
+      <ol className="anim-empty-steps">
+        <li>
+          <span className="anim-empty-step-ico">
+            <ImageIcon size={18} strokeWidth={1.75} />
+          </span>
+          <div>
+            <strong>Gere a PNG</strong>
+            <span>Use o prompt e crie a imagem com fundo transparente.</span>
+          </div>
+        </li>
+        <li>
+          <span className="anim-empty-step-ico">
+            <Crop size={18} strokeWidth={1.75} />
+          </span>
+          <div>
+            <strong>Abra em Recortar</strong>
+            <span>A grade será aplicada automaticamente.</span>
+          </div>
+        </li>
+        <li>
+          <span className="anim-empty-step-ico">
+            <Play size={18} strokeWidth={1.75} fill="currentColor" />
+          </span>
+          <div>
+            <strong>Anime os clips</strong>
+            <span>Pré-visualize e exporte ZIP ou HTML.</span>
+          </div>
+        </li>
+      </ol>
+    </article>
+  );
+}
+
 export function AnimateScreen() {
   const app = useSpriteCut();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheRef = useRef<HTMLCanvasElement[]>([]);
+  const [howOpen, setHowOpen] = useState(false);
   const current = app.clipFrames[app.anim.clipIndex];
 
   useEffect(() => {
@@ -44,29 +164,20 @@ export function AnimateScreen() {
 
   if (!app.hasImage) {
     return (
-      <section className="screen-page" id="screen-animate">
-        <div className="empty-panel">
-          <span className="empty-mark">▶</span>
-          <strong>Ainda não há spritesheet nesta sessão</strong>
-          <p>
-            Gere a PNG com o prompt e abra-a em Recortar. Depois cada linha (IDLE, WALK, …) vira um clip para
-            pré-visualizar e exportar.
-          </p>
-          <div className="prompt-actions">
-            <button type="button" className="btn primary" onClick={() => app.fileInputRef.current?.click()}>
-              Abrir PNG
-            </button>
-            <button type="button" className="btn ghost" onClick={() => app.setScreen("about")}>
-              Voltar ao prompt
-            </button>
-          </div>
-        </div>
+      <section className="screen-page animate-page" id="screen-animate">
+        <AnimateHead onHow={() => setHowOpen(true)} />
+        <AnimateEmpty
+          onOpen={() => app.fileInputRef.current?.click()}
+          onBack={() => app.setScreen("about")}
+        />
+        <TutorialDialog open={howOpen} onClose={() => setHowOpen(false)} />
       </section>
     );
   }
 
   return (
-    <section className="screen-page" id="screen-animate">
+    <section className="screen-page animate-page" id="screen-animate">
+      <AnimateHead onHow={() => setHowOpen(true)} />
       <div className="anim-layout">
         <div className="anim-stage">
           <div className="anim-canvas-wrap">
@@ -237,6 +348,7 @@ export function AnimateScreen() {
           </p>
         </aside>
       </div>
+      <TutorialDialog open={howOpen} onClose={() => setHowOpen(false)} />
     </section>
   );
 }
