@@ -615,8 +615,7 @@ export function AnimateScreen() {
               Exportar ZIP (todos da grade)
             </button>
             <p className="hint">
-              HTML limpo: só o sprite animado (sem controles), pronto para embutir. FPS e loop seguem os da
-              prévia.
+              O HTML usa os mesmos FPS, velocidade, loop e ping-pong do preview, com os frames marcados (✓).
             </p>
           </div>
         </aside>

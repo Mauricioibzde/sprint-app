@@ -60,12 +60,18 @@ export function buildAnimatedIndexHtml(opts: {
   title: string;
   fps: number;
   loop: boolean;
+  pingPong?: boolean;
+  speed?: number;
   frames: { src: string; w: number; h: number }[];
 }): string {
   const frames = opts.frames;
   const w = Math.max(...frames.map((f) => f.w), 1);
   const h = Math.max(...frames.map((f) => f.h), 1);
   const srcJson = JSON.stringify(frames.map((f) => f.src));
+  const fps = Math.max(1, opts.fps | 0);
+  const speed = Math.max(0.25, Number(opts.speed) || 1);
+  const loop = opts.loop ? "true" : "false";
+  const pingPong = opts.pingPong ? "true" : "false";
   const closeScript = "</" + "script>";
   const closeBody = "</" + "body>";
   const closeHtml = "</" + "html>";
@@ -89,7 +95,9 @@ export function buildAnimatedIndexHtml(opts: {
 <canvas id="s" width="${w}" height="${h}" aria-label=""></canvas>
 <script>
 (function(){
-  var F=${srcJson},i=0,fps=${Math.max(1, opts.fps | 0)},loop=${opts.loop ? "true" : "false"};
+  var F=${srcJson};
+  var i=0,dir=1,loop=${loop},pingPong=${pingPong};
+  var fps=${fps},speed=${speed};
   var el=document.getElementById('s');
   var ctx=el.getContext('2d');
   ctx.imageSmoothingEnabled=false;
@@ -97,20 +105,44 @@ export function buildAnimatedIndexHtml(opts: {
   function draw(){
     var im=imgs[i];
     if(!im||!im.complete||!im.naturalWidth) return;
+    var dx=Math.round((el.width-im.naturalWidth)/2);
+    var dy=Math.round((el.height-im.naturalHeight)/2);
     ctx.clearRect(0,0,el.width,el.height);
-    ctx.drawImage(im,0,0,el.width,el.height);
+    ctx.drawImage(im,dx,dy);
   }
-  var last=0,frameMs=1000/Math.max(1,fps),started=false;
+  var last=0,frameMs=1000/Math.max(1,fps*speed),started=false,running=true;
+  function advance(){
+    var lastIdx=imgs.length-1;
+    if(pingPong){
+      var next=i+dir;
+      if(next>lastIdx){
+        if(!loop && i===lastIdx){ running=false; return; }
+        dir=-1;
+        next=Math.max(0,lastIdx-1);
+      }else if(next<0){
+        if(!loop && i===0){ running=false; return; }
+        dir=1;
+        next=Math.min(lastIdx,1);
+      }
+      i=next;
+      return;
+    }
+    i+=1;
+    if(i>lastIdx){
+      if(!loop){ i=lastIdx; running=false; return; }
+      i=0;
+    }
+  }
   function tick(now){
+    if(!running) return;
     if(!last) last=now;
     var acc=now-last;
     if(acc>=frameMs){
       last=now-(acc%frameMs);
-      i++;
-      if(i>=imgs.length){ if(!loop){ i=imgs.length-1; draw(); return; } i=0; }
+      advance();
       draw();
     }
-    requestAnimationFrame(tick);
+    if(running) requestAnimationFrame(tick);
   }
   function start(){
     if(started) return;

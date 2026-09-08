@@ -832,11 +832,13 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       showToast("Abra uma spritesheet antes de exportar o HTML.", "warn");
       return;
     }
+    // Keep clip order (same as preview); only include frames marked for export.
     const picked = clipFrames.filter((f) => anim.exportPick.includes(f.index));
     if (!picked.length) {
       showToast("Marque ao menos 1 frame (✓) para exportar.", "warn");
       return;
     }
+    const speed = Math.max(0.25, anim.speed || 1);
     showToast("Gerando HTML com " + picked.length + " frame(s)…");
     try {
       const frames = [];
@@ -846,14 +848,34 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
         frames.push({ src, w: rect.w, h: rect.h });
       }
       const title = (fileName.replace(/\.[^.]+$/, "") || "sprite") + " — " + clipTitle;
-      const html = buildAnimatedIndexHtml({ title, fps: anim.fps, loop: anim.loop, frames });
+      const html = buildAnimatedIndexHtml({
+        title,
+        fps: anim.fps,
+        loop: anim.loop,
+        pingPong: anim.pingPong,
+        speed,
+        frames
+      });
       const safeClip = clipTitle.replace(/[^\w\-]+/g, "_");
       downloadBlob(
         new Blob([html], { type: "text/html;charset=utf-8" }),
         (fileName.replace(/\.[^.]+$/, "") || "sprite") + "_" + safeClip + "_index.html"
       );
-      pushHistory("HTML animado: " + clipTitle + " (" + picked.length + " frames)");
-      showToast("HTML pronto: " + picked.length + " frames · " + clipTitle, "ok");
+      pushHistory(
+        "HTML animado: " +
+          clipTitle +
+          " (" +
+          picked.length +
+          " frames · " +
+          anim.fps +
+          "fps · " +
+          speed +
+          "x" +
+          (anim.pingPong ? " · ping-pong" : "") +
+          (anim.loop ? " · loop" : "") +
+          ")"
+      );
+      showToast("HTML pronto: igual ao preview · " + picked.length + " frames · " + clipTitle, "ok");
     } catch (err) {
       console.error(err);
       showToast("Falha ao gerar HTML animado.", "warn");
