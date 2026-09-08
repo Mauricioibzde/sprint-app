@@ -1,12 +1,32 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, CircleHelp, Crop, FolderOpen, ImageIcon, Play } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  CircleHelp,
+  Copy,
+  Crop,
+  Eye,
+  FolderOpen,
+  ImageIcon,
+  Lock,
+  Maximize2,
+  Pause,
+  Pencil,
+  Play,
+  Plus,
+  SkipBack,
+  SkipForward,
+  StepBack,
+  StepForward,
+  Trash2
+} from "lucide-react";
 import { FramePreview } from "@/components/ui/FramePreview";
 import { TutorialDialog } from "@/components/shell/Sidebar";
 import { useSpriteCut } from "@/context/sprite-cut-context";
 import { paintRectPreview } from "@/lib/export";
-import { rowLabelName } from "@/lib/prompt";
+import { nextClipName, rowLabelName } from "@/lib/prompt";
 import type { AnimMode } from "@/types";
 
 function blitFrame(dest: HTMLCanvasElement, src: HTMLCanvasElement) {
@@ -17,6 +37,13 @@ function blitFrame(dest: HTMLCanvasElement, src: HTMLCanvasElement) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, dest.width, dest.height);
   ctx.drawImage(src, 0, 0);
+}
+
+function formatTime(frameIndex: number, fps: number) {
+  const sec = Math.max(0, frameIndex) / Math.max(1, fps);
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
 }
 
 function PixelKnight({ pose = 0 }: { pose?: 0 | 1 | 2 }) {
@@ -53,7 +80,7 @@ function AnimateHead({ onHow }: { onHow: () => void }) {
     <div className="page-head anim-head">
       <div>
         <h2>Animar</h2>
-        <p>Pré-visualize cada linha e exporte HTML ou ZIP para o jogo.</p>
+        <p>Pré-visualize, edite a animação e exporte em HTML ou ZIP para o jogo.</p>
       </div>
       <button type="button" className="how-btn" onClick={onHow}>
         <CircleHelp size={16} strokeWidth={1.75} />
@@ -140,8 +167,16 @@ export function AnimateScreen() {
   const app = useSpriteCut();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cacheRef = useRef<HTMLCanvasElement[]>([]);
+  const stripRef = useRef<HTMLDivElement>(null);
   const [howOpen, setHowOpen] = useState(false);
+  const [zoom, setZoom] = useState(200);
+  const [showGrid, setShowGrid] = useState(true);
+  const [fitMode, setFitMode] = useState<"contain" | "cover">("contain");
+  const [mobileTab, setMobileTab] = useState<"preview" | "clips">("preview");
   const current = app.clipFrames[app.anim.clipIndex];
+  const totalFrames = app.clipFrames.length;
+  const durationLabel = formatTime(Math.max(0, totalFrames - 1), app.anim.fps);
+  const currentLabel = formatTime(app.anim.clipIndex, app.anim.fps);
 
   useEffect(() => {
     cacheRef.current = app.clipFrames.map((rect) => {
@@ -152,7 +187,6 @@ export function AnimateScreen() {
     const dest = canvasRef.current;
     const src = cacheRef.current[app.anim.clipIndex];
     if (dest && src) blitFrame(dest, src);
-    // clipIndex is read once after rebuilding the cache
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app.imageEl, app.clipFrames, app.autoCenterFrames]);
 
@@ -161,6 +195,61 @@ export function AnimateScreen() {
     const src = cacheRef.current[app.anim.clipIndex];
     if (dest && src) blitFrame(dest, src);
   }, [app.anim.clipIndex]);
+
+  useEffect(() => {
+    const el = stripRef.current?.querySelector<HTMLElement>("[data-active='true']");
+    el?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [app.anim.clipIndex]);
+
+  const invertSelection = () => {
+    const set = new Set(app.anim.exportPick);
+    app.setAnim({
+      exportPick: app.clipFrames.filter((f) => !set.has(f.index)).map((f) => f.index)
+    });
+  };
+
+  const reverseSelection = () => {
+    app.setAnim({ exportPick: [...app.anim.exportPick].reverse() });
+  };
+
+  const duplicateSelection = () => {
+    if (!app.anim.exportPick.length) {
+      app.pickOnlyCurrent();
+      return;
+    }
+    app.setAnim({ exportPick: [...app.anim.exportPick, ...app.anim.exportPick] });
+  };
+
+  const addClip = () => {
+    const name = nextClipName(app.promptParams, "IDLE");
+    app.updatePrompt(
+      {
+        clips: [...app.promptParams.clips, { name, desc: "nova animação" }]
+      },
+      true
+    );
+    app.setAnim({
+      mode: "row",
+      row: app.promptParams.clips.length,
+      clipIndex: 0,
+      playing: false,
+      playDir: 1
+    });
+  };
+
+  const goStart = () => app.setAnim({ clipIndex: 0, playing: false, playDir: 1 });
+  const goEnd = () =>
+    app.setAnim({
+      clipIndex: Math.max(0, totalFrames - 1),
+      playing: false,
+      playDir: 1
+    });
+
+  const modeLabel = useMemo(() => {
+    if (app.anim.mode === "all") return "Todos os frames";
+    if (app.anim.mode === "range") return "Intervalo";
+    return "Por linha (animação)";
+  }, [app.anim.mode]);
 
   if (!app.hasImage) {
     return (
@@ -176,176 +265,360 @@ export function AnimateScreen() {
   }
 
   return (
-    <section className="screen-page animate-page" id="screen-animate">
+    <section className="screen-page anim-page animate-page" id="screen-animate">
       <AnimateHead onHow={() => setHowOpen(true)} />
-      <div className="anim-layout">
-        <div className="anim-stage">
-          <div className="anim-canvas-wrap">
-            <canvas id="anim-canvas" ref={canvasRef} width={512} height={256} aria-label="Preview da animação" />
-          </div>
-          <div className="anim-controls">
-            <button type="button" className="btn" onClick={() => app.stepAnim(-1)} title="Frame anterior">
-              ⏮
-            </button>
-            <button
-              type="button"
-              className={"btn primary" + (app.anim.playing ? " playing" : "")}
-              onClick={app.togglePlay}
-              title="Play / Pause"
-            >
-              {app.anim.playing ? "❚❚ Pause" : "▶ Play"}
-            </button>
-            <button type="button" className="btn" onClick={() => app.stepAnim(1)} title="Próximo frame">
-              ⏭
-            </button>
-            <button type="button" className="btn" onClick={app.stopPlay} title="Parar">
-              ⏹
-            </button>
-            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#eef6ff" }}>
-              FPS
-              <input
-                type="range"
-                min={1}
-                max={48}
-                value={app.anim.fps}
-                style={{ width: 120 }}
-                onChange={(e) => app.setAnim({ fps: Number(e.target.value) })}
-              />
-              <strong style={{ color: "#e8f7ff", minWidth: 28 }}>{app.anim.fps}</strong>
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#eef6ff" }}>
-              <input
-                type="checkbox"
-                checked={app.anim.loop}
-                onChange={(e) => app.setAnim({ loop: e.target.checked })}
-              />{" "}
-              Loop
-            </label>
-          </div>
-          <div className="anim-meta">
-            <span>
-              Clip: <strong>{app.clipTitle}</strong>
-            </span>
-            <span>
-              Frame: <strong>{current ? current.index : "—"}</strong>
-            </span>
-            <span>
-              Tamanho: <strong>{current ? current.w + "×" + current.h : "—"}</strong>
-            </span>
-            <span>
-              Exportar: <strong>{app.anim.exportPick.length}</strong> frames
-            </span>
-          </div>
-          <div className="anim-strip-bar">
-            <button type="button" className="btn" onClick={() => app.pickAll(true)}>
-              Marcar todos
-            </button>
-            <button type="button" className="btn" onClick={() => app.pickAll(false)}>
-              Limpar
-            </button>
-            <button type="button" className="btn" onClick={app.pickOnlyCurrent}>
-              Só o atual
-            </button>
-            <span className="sel-count">Clique no ✓ do frame para incluir/excluir do HTML</span>
-          </div>
-          <div className="anim-strip" aria-label="Frames do clip">
-            {app.clipFrames.length ? (
-              app.clipFrames.map((frame, i) => {
-                const on = app.anim.exportPick.includes(frame.index);
-                return (
-                  <button
-                    key={frame.index}
-                    type="button"
-                    className={
-                      (i === app.anim.clipIndex ? "active " : "") + (on ? "export-on" : "export-off")
-                    }
-                    onClick={() => app.setAnim({ clipIndex: i, playing: false })}
-                  >
-                    <span
-                      className="pick"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        app.pickExport(frame.index);
-                      }}
-                    />
-                    <FramePreview img={app.imageEl} rect={frame} maxSide={56} center={app.autoCenterFrames} />
-                    <span>{frame.index}</span>
-                  </button>
-                );
-              })
-            ) : (
-              <p className="anim-strip-empty">Nenhum frame. Ajuste as guias ou o intervalo.</p>
-            )}
-          </div>
-          <p className="anim-hint-keys">Atalhos: Espaço play/pause · ← → frames · Esc parar</p>
-        </div>
-        <aside className="anim-side">
-          <h3>CLIPS / LINHAS</h3>
-          <p className="hint" style={{ margin: 0 }}>
-            Escolha a animação (linha). Os nomes são editáveis em <b>Prompt</b>.
-          </p>
-          <div className="anim-row-list">
-            {app.promptParams.clips.map((clip, i) => (
+      <div className="anim-mobile-tabs" role="tablist" aria-label="Secções do Animar">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === "preview"}
+          className={mobileTab === "preview" ? "active" : ""}
+          onClick={() => setMobileTab("preview")}
+        >
+          Pré-visualização
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mobileTab === "clips"}
+          className={mobileTab === "clips" ? "active" : ""}
+          onClick={() => setMobileTab("clips")}
+        >
+          Clips
+        </button>
+      </div>
+
+      <div className={"anim-layout" + (mobileTab === "clips" ? " show-clips" : " show-preview")}>
+        <div className="anim-main">
+          <div className={"anim-stage" + (showGrid ? " has-grid" : "")}>
+            <div className="anim-stage-toolbar">
+              <label className="anim-zoom">
+                <select value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom">
+                  <option value={100}>100%</option>
+                  <option value={150}>150%</option>
+                  <option value={200}>200%</option>
+                  <option value={300}>300%</option>
+                </select>
+                <ChevronDown size={14} strokeWidth={1.75} aria-hidden />
+              </label>
               <button
-                key={clip.name + i}
                 type="button"
-                className={app.anim.mode === "row" && app.anim.row === i ? "active" : ""}
-                onClick={() => app.setAnim({ mode: "row", row: i, clipIndex: 0, playing: false })}
+                className="icon-btn"
+                title="Ecrã inteiro"
+                onClick={() => {
+                  const wrap = canvasRef.current?.parentElement;
+                  void wrap?.requestFullscreen?.();
+                }}
               >
-                {rowLabelName(app.promptParams, i)}
+                <Maximize2 size={16} strokeWidth={1.75} />
               </button>
-            ))}
-          </div>
-          <div className="field">
-            <span>Modo</span>
-            <select
-              style={{
-                width: "100%",
-                marginTop: 6,
-                background: "#081522",
-                border: "1px solid var(--line)",
-                color: "#e8f7ff",
-                borderRadius: 10,
-                padding: "8px 10px"
-              }}
-              value={app.anim.mode}
-              onChange={(e) => app.setAnim({ mode: e.target.value as AnimMode, clipIndex: 0, playing: false })}
+            </div>
+
+            <div
+              className={"anim-canvas-wrap fit-" + fitMode}
+              style={{ ["--anim-zoom" as string]: String(zoom / 100) }}
             >
-              <option value="row">Por linha (animação)</option>
-              <option value="all">Todos os frames</option>
-              <option value="range">Intervalo</option>
-            </select>
-          </div>
-          {app.anim.mode === "range" ? (
-            <div className="row" style={{ display: "flex", gap: 8 }}>
-              <div className="field" style={{ flex: 1, margin: 0 }}>
-                <span>De</span>
-                <input
-                  value={app.anim.rangeFrom}
-                  onChange={(e) => app.setAnim({ rangeFrom: Number(e.target.value) || 1 })}
-                />
+              {current ? (
+                <canvas id="anim-canvas" ref={canvasRef} width={512} height={256} aria-label="Preview da animação" />
+              ) : (
+                <div className="anim-empty-preview">
+                  <span className="anim-empty-ico" aria-hidden />
+                  <strong>Sprite em pré-visualização</strong>
+                  <p>A animação será exibida aqui.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="anim-transport">
+              <div className="anim-transport-left">
+                <button type="button" className="icon-btn" title="Início" onClick={goStart}>
+                  <SkipBack size={16} strokeWidth={1.75} />
+                </button>
+                <button type="button" className="icon-btn" title="Frame anterior" onClick={() => app.stepAnim(-1)}>
+                  <StepBack size={16} strokeWidth={1.75} />
+                </button>
+                <button
+                  type="button"
+                  className={"anim-play" + (app.anim.playing ? " playing" : "")}
+                  onClick={app.togglePlay}
+                  title="Play / Pause"
+                >
+                  {app.anim.playing ? <Pause size={18} strokeWidth={2} /> : <Play size={18} strokeWidth={2} />}
+                </button>
+                <button type="button" className="icon-btn" title="Próximo frame" onClick={() => app.stepAnim(1)}>
+                  <StepForward size={16} strokeWidth={1.75} />
+                </button>
+                <button type="button" className="icon-btn" title="Fim" onClick={goEnd}>
+                  <SkipForward size={16} strokeWidth={1.75} />
+                </button>
+                <span className="anim-timecode">
+                  {currentLabel} / {durationLabel}
+                </span>
               </div>
-              <div className="field" style={{ flex: 1, margin: 0 }}>
-                <span>Até</span>
-                <input
-                  value={app.anim.rangeTo}
-                  onChange={(e) => app.setAnim({ rangeTo: Number(e.target.value) || 1 })}
-                />
+              <div className="anim-transport-right">
+                <label className="anim-inline-field">
+                  <span>FPS</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={app.anim.fps}
+                    onChange={(e) => app.setAnim({ fps: Math.max(1, Math.min(60, Number(e.target.value) || 1)) })}
+                  />
+                </label>
+                <label className="anim-inline-field">
+                  <span>Velocidade</span>
+                  <select value={app.anim.speed} onChange={(e) => app.setAnim({ speed: Number(e.target.value) })}>
+                    <option value={0.5}>0.5x</option>
+                    <option value={1}>1.0x</option>
+                    <option value={1.5}>1.5x</option>
+                    <option value={2}>2.0x</option>
+                  </select>
+                </label>
+                <label className={"anim-switch" + (app.anim.loop ? " on" : "")}>
+                  <input
+                    type="checkbox"
+                    checked={app.anim.loop}
+                    onChange={(e) => app.setAnim({ loop: e.target.checked })}
+                  />
+                  <span className="anim-switch-ui" aria-hidden />
+                  Loop
+                </label>
+                <label className={"anim-switch cyan" + (showGrid ? " on" : "")}>
+                  <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+                  <span className="anim-switch-ui" aria-hidden />
+                  Grade
+                </label>
+                <label className="anim-inline-field">
+                  <span>Ajustar</span>
+                  <select value={fitMode} onChange={(e) => setFitMode(e.target.value as "contain" | "cover")}>
+                    <option value="contain">Contido</option>
+                    <option value="cover">Preencher</option>
+                  </select>
+                </label>
               </div>
             </div>
-          ) : null}
-          <button type="button" className="btn" onClick={() => app.applyPreset({ toast: true, switchScreen: false })}>
-            ↻ Atualizar da grade
-          </button>
-          <button type="button" className="btn primary" onClick={() => void app.exportHtml()}>
-            ⬇ Exportar HTML animado
-          </button>
-          <button type="button" className="btn" onClick={() => void app.exportZip()}>
-            ⬆ Exportar ZIP (todos da grade)
-          </button>
-          <p className="hint" style={{ margin: 0 }}>
-            HTML limpo: só o sprite animado (sem controles), pronto para embutir. FPS e loop seguem os da prévia.
-          </p>
+          </div>
+
+          <div className="anim-timeline">
+            <div className="anim-timeline-toolbar">
+              <button type="button" className="icon-btn" title="Limpar seleção" onClick={() => app.pickAll(false)}>
+                <Trash2 size={15} strokeWidth={1.75} />
+              </button>
+              <button type="button" className="icon-btn" title="Duplicar seleção" onClick={duplicateSelection}>
+                <Copy size={15} strokeWidth={1.75} />
+              </button>
+              <button
+                type="button"
+                className="btn tiny"
+                onClick={() => app.setAnim({ mode: "range", playing: false })}
+              >
+                <Plus size={14} strokeWidth={1.75} /> Adicionar frames
+              </button>
+            </div>
+
+            <div className="anim-timeline-track">
+              <div className="anim-layer">
+                <strong>Layer 1</strong>
+                <span>
+                  <Eye size={14} strokeWidth={1.75} aria-hidden />
+                  <Lock size={14} strokeWidth={1.75} aria-hidden />
+                </span>
+              </div>
+              <div className="anim-strip-wrap">
+                <div
+                  className="anim-playhead"
+                  style={{
+                    left: totalFrames ? `calc(${(app.anim.clipIndex + 0.5) / totalFrames} * 100%)` : "12px"
+                  }}
+                >
+                  <b>{app.anim.clipIndex}</b>
+                </div>
+                <div className="anim-strip" ref={stripRef} aria-label="Frames do clip">
+                  {app.clipFrames.length ? (
+                    app.clipFrames.map((frame, i) => {
+                      const on = app.anim.exportPick.includes(frame.index);
+                      return (
+                        <button
+                          key={frame.index + "-" + i}
+                          type="button"
+                          data-active={i === app.anim.clipIndex ? "true" : "false"}
+                          className={
+                            (i === app.anim.clipIndex ? "active " : "") + (on ? "export-on" : "export-off")
+                          }
+                          onClick={() => app.setAnim({ clipIndex: i, playing: false })}
+                        >
+                          <span
+                            className="pick"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              app.pickExport(frame.index);
+                            }}
+                          />
+                          <FramePreview
+                            img={app.imageEl}
+                            rect={frame}
+                            maxSide={56}
+                            center={app.autoCenterFrames}
+                          />
+                          <span className="frame-n">{frame.index}</span>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <p className="anim-strip-empty">Nenhum frame. Ajuste as guias ou o intervalo.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="anim-edit-tools">
+              <span>Ferramentas de edição</span>
+              <div>
+                <button type="button" className="btn tiny" onClick={() => app.pickAll(true)}>
+                  Marcar todos
+                </button>
+                <button type="button" className="btn tiny" onClick={() => app.pickAll(false)}>
+                  Desmarcar
+                </button>
+                <button type="button" className="btn tiny" onClick={() => app.pickAll(false)}>
+                  Limpar
+                </button>
+                <button type="button" className="btn tiny" onClick={duplicateSelection}>
+                  Duplicar
+                </button>
+                <button type="button" className="btn tiny" onClick={invertSelection}>
+                  Inverter
+                </button>
+                <button type="button" className="btn tiny" onClick={reverseSelection}>
+                  Reverter
+                </button>
+                <button
+                  type="button"
+                  className="btn tiny"
+                  onClick={() => app.setAnim({ clipIndex: Math.max(0, app.anim.clipIndex - 1), playing: false })}
+                >
+                  Comparar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside className="anim-side">
+          <div className="anim-side-block">
+            <h3>CLIPS / LINHAS</h3>
+            <p className="hint">Escolha a animação (linha). Os nomes são editáveis em Prompt.</p>
+            <div className="anim-row-list">
+              {app.promptParams.clips.map((clip, i) => (
+                <button
+                  key={clip.name + i}
+                  type="button"
+                  className={app.anim.mode === "row" && app.anim.row === i ? "active" : ""}
+                  onClick={() =>
+                    app.setAnim({ mode: "row", row: i, clipIndex: 0, playing: false, playDir: 1 })
+                  }
+                >
+                  <span>{rowLabelName(app.promptParams, i)}</span>
+                  <span
+                    className="anim-clip-edit"
+                    title="Editar no Prompt"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      app.setScreen("about");
+                    }}
+                  >
+                    <Pencil size={14} strokeWidth={1.75} />
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button type="button" className="btn anim-new-clip" onClick={addClip}>
+              <Plus size={14} strokeWidth={1.75} /> Novo clip
+            </button>
+          </div>
+
+          <div className="anim-side-block">
+            <h3>Configurações da animação</h3>
+            <label className="anim-field">
+              <span>FPS</span>
+              <select value={app.anim.fps} onChange={(e) => app.setAnim({ fps: Number(e.target.value) })}>
+                {[6, 8, 10, 12, 15, 24, 30].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="anim-field">
+              <span>Modo de reprodução</span>
+              <select
+                value={app.anim.mode}
+                onChange={(e) =>
+                  app.setAnim({ mode: e.target.value as AnimMode, clipIndex: 0, playing: false, playDir: 1 })
+                }
+              >
+                <option value="row">Por linha (animação)</option>
+                <option value="all">Todos os frames</option>
+                <option value="range">Intervalo</option>
+              </select>
+            </label>
+            {app.anim.mode === "range" ? (
+              <div className="anim-range-row">
+                <label className="anim-field">
+                  <span>De</span>
+                  <input
+                    value={app.anim.rangeFrom}
+                    onChange={(e) => app.setAnim({ rangeFrom: Number(e.target.value) || 1 })}
+                  />
+                </label>
+                <label className="anim-field">
+                  <span>Até</span>
+                  <input
+                    value={app.anim.rangeTo}
+                    onChange={(e) => app.setAnim({ rangeTo: Number(e.target.value) || 1 })}
+                  />
+                </label>
+              </div>
+            ) : null}
+            <div className="anim-side-toggles">
+              <label className={"anim-switch" + (app.anim.loop ? " on" : "")}>
+                <input
+                  type="checkbox"
+                  checked={app.anim.loop}
+                  onChange={(e) => app.setAnim({ loop: e.target.checked })}
+                />
+                <span className="anim-switch-ui" aria-hidden />
+                Loop
+              </label>
+              <label className={"anim-switch cyan" + (app.anim.pingPong ? " on" : "")}>
+                <input
+                  type="checkbox"
+                  checked={app.anim.pingPong}
+                  onChange={(e) => app.setAnim({ pingPong: e.target.checked, playDir: 1 })}
+                />
+                <span className="anim-switch-ui" aria-hidden />
+                Ping-pong
+              </label>
+            </div>
+            <p className="anim-mode-note">{modeLabel}</p>
+          </div>
+
+          <div className="anim-side-actions">
+            <button type="button" className="btn" onClick={() => app.applyPreset({ toast: true, switchScreen: false })}>
+              ↻ Atualizar da grade
+            </button>
+            <button type="button" className="btn primary" onClick={() => void app.exportHtml()}>
+              Exportar HTML animado
+            </button>
+            <button type="button" className="btn ghost" onClick={() => void app.exportZip()}>
+              Exportar ZIP (todos da grade)
+            </button>
+            <p className="hint">
+              HTML limpo: só o sprite animado (sem controles), pronto para embutir. FPS e loop seguem os da
+              prévia.
+            </p>
+          </div>
         </aside>
       </div>
       <TutorialDialog open={howOpen} onClose={() => setHowOpen(false)} />

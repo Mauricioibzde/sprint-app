@@ -74,12 +74,15 @@ type AnimState = {
   playing: boolean;
   fps: number;
   loop: boolean;
+  pingPong: boolean;
+  speed: number;
   mode: AnimMode;
   row: number;
   clipIndex: number;
   rangeFrom: number;
   rangeTo: number;
   exportPick: number[];
+  playDir: 1 | -1;
 };
 
 type Ctx = {
@@ -270,12 +273,15 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
     playing: false,
     fps: 12,
     loop: true,
+    pingPong: false,
+    speed: 1,
     mode: "row",
     row: 0,
     clipIndex: 0,
     rangeFrom: 1,
     rangeTo: 8,
-    exportPick: []
+    exportPick: [],
+    playDir: 1
   });
 
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -909,7 +915,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       setAnimState((a) => ({ ...a, playing: false }));
       return;
     }
-    const frameMs = 1000 / Math.max(1, anim.fps);
+    const frameMs = 1000 / Math.max(1, anim.fps * Math.max(0.25, anim.speed || 1));
     let last = performance.now();
     let acc = 0;
     const tick = (now: number) => {
@@ -921,12 +927,29 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
         if (acc > frameMs) acc = 0;
         setAnimState((a) => {
           if (!a.playing) return a;
-          let next = a.clipIndex + 1;
-          if (next >= clipFrames.length) {
-            if (!a.loop) return { ...a, playing: false, clipIndex: Math.max(0, clipFrames.length - 1) };
-            next = 0;
+          const end = clipFrames.length - 1;
+          let dir: 1 | -1 = a.playDir || 1;
+          let next = a.clipIndex + dir;
+          if (a.pingPong) {
+            if (next > end) {
+              if (!a.loop && a.clipIndex === end) return { ...a, playing: false };
+              dir = -1;
+              next = Math.max(0, end - 1);
+            } else if (next < 0) {
+              if (!a.loop && a.clipIndex === 0) return { ...a, playing: false };
+              dir = 1;
+              next = Math.min(end, 1);
+            }
+            return { ...a, clipIndex: next, playDir: dir };
           }
-          return { ...a, clipIndex: next };
+          if (next > end) {
+            if (!a.loop) return { ...a, playing: false, clipIndex: end, playDir: 1 };
+            next = 0;
+          } else if (next < 0) {
+            if (!a.loop) return { ...a, playing: false, clipIndex: 0, playDir: 1 };
+            next = end;
+          }
+          return { ...a, clipIndex: next, playDir: 1 };
         });
       }
       playRaf.current = window.requestAnimationFrame(tick);
@@ -936,7 +959,7 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       if (playRaf.current) window.cancelAnimationFrame(playRaf.current);
       playRaf.current = null;
     };
-  }, [anim.playing, anim.fps, anim.loop, clipFrames.length]);
+  }, [anim.playing, anim.fps, anim.loop, anim.pingPong, anim.speed, clipFrames.length]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--guide", guideColor);
@@ -1570,12 +1593,13 @@ export function SpriteCutProvider({ children }: { children: ReactNode }) {
       }
       setAnimState((a) => ({ ...a, playing: !a.playing }));
     },
-    stopPlay: () => setAnimState((a) => ({ ...a, playing: false, clipIndex: 0 })),
+    stopPlay: () => setAnimState((a) => ({ ...a, playing: false, clipIndex: 0, playDir: 1 })),
     stepAnim: (dir) => {
       if (!clipFrames.length) return;
       setAnimState((a) => ({
         ...a,
         playing: false,
+        playDir: dir >= 0 ? 1 : -1,
         clipIndex: (a.clipIndex + dir + clipFrames.length) % clipFrames.length
       }));
     },
